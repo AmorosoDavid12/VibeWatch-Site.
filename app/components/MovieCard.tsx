@@ -10,7 +10,7 @@ interface MovieCardProps {
   isWatched?: boolean;
 }
 
-const MovieCard = ({ id, title, imageUrl, rating, year, isWatched = false }: MovieCardProps) => {
+const MovieCard = ({ title, imageUrl, rating, year, isWatched = false }: MovieCardProps) => {
   return (
     <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden h-[280px] w-[180px]">
       <div className="relative h-[220px] w-full">

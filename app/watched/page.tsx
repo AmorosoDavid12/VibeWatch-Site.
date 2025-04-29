@@ -42,7 +42,7 @@ export default function WatchedPage() {
           <div>
             <div className="mb-6 flex items-center justify-between">
               <span className="text-lg">
-                You've watched <span className="text-tab-watched font-bold">{watchedItems.length}</span> items
+                You&apos;ve watched <span className="text-tab-watched font-bold">{watchedItems.length}</span> items
               </span>
               <div className="flex space-x-2">
                 <button className="px-3 py-1 bg-gray-200 dark:bg-gray-800 rounded-md text-sm">Sort</button>
@@ -66,7 +66,7 @@ export default function WatchedPage() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">You haven't watched anything yet</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">You haven&apos;t watched anything yet</p>
             <button className="bg-purple-alt text-white px-4 py-2 rounded-md">
               Browse content
             </button>

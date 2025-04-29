@@ -62,7 +62,7 @@ export default function PrivacyPolicy() {
             </ul>
             
             <p className="mb-4">
-              Google uses this information to provide personalized advertisements. You can opt out of personalized advertising by visiting Google's Ads Settings.
+              Google uses this information to provide personalized advertisements. You can opt out of personalized advertising by visiting Google&apos;s Ads Settings.
             </p>
 
             <h2 className="text-xl font-semibold mt-6 mb-3">Data Sharing and Disclosure</h2>
@@ -86,7 +86,7 @@ export default function PrivacyPolicy() {
             <ul className="list-disc pl-6 mb-4">
               <li>Update or delete your account information</li>
               <li>Opt out of marketing communications</li>
-              <li>Adjust your device's privacy settings to limit ad tracking</li>
+              <li>Adjust your device&apos;s privacy settings to limit ad tracking</li>
             </ul>
 
             <h2 className="text-xl font-semibold mt-6 mb-3">Data Security</h2>
@@ -95,7 +95,7 @@ export default function PrivacyPolicy() {
               We implement reasonable security measures to protect your personal information from unauthorized access, alteration, disclosure, or destruction.
             </p>
 
-            <h2 className="text-xl font-semibold mt-6 mb-3">Children's Privacy</h2>
+            <h2 className="text-xl font-semibold mt-6 mb-3">Children&apos;s Privacy</h2>
             
             <p className="mb-4">
               Our app is not directed to children under 13. We do not knowingly collect information from children under 13. If you are a parent or guardian and believe we have collected information from your child, please contact us.
