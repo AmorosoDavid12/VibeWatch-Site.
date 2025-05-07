@@ -10,9 +10,9 @@ const Navigation = () => {
     <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 shadow-lg z-50">
       <div className="flex justify-around items-center h-16">
         <Link 
-          href="/" 
+          href="/watchlist" 
           className={`flex flex-col items-center justify-center w-full h-full ${
-            pathname === '/' ? 'text-tab-watchlist font-bold' : 'text-gray-500'
+            pathname === '/watchlist' ? 'text-tab-watchlist font-bold' : 'text-gray-500'
           }`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
