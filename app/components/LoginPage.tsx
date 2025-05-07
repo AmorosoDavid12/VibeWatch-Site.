@@ -34,8 +34,8 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       // Router navigation now happens in useEffect
-    } catch (err: any) {
-      setError(err.message || 'Failed to log in');
+    } catch (err: Error | unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to log in');
       setLoading(false);
     }
   };
@@ -58,8 +58,8 @@ export default function LoginPage() {
       setActiveTab('login');
       setError('');
       alert('Please check your email to confirm your account');
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign up');
+    } catch (err: Error | unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to sign up');
     } finally {
       setLoading(false);
     }

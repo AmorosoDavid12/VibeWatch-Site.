@@ -40,7 +40,7 @@ export default function ForgotPassword() {
         {!isSubmitted ? (
           <>
             <p className="text-gray-400 mb-6">
-              Enter your email address and we'll send you instructions to reset your password.
+              Enter your email address and we&apos;ll send you instructions to reset your password.
             </p>
             
             <form onSubmit={handleSubmit}>
@@ -74,7 +74,7 @@ export default function ForgotPassword() {
             </svg>
             <h3 className="text-xl font-medium mb-2">Check your email</h3>
             <p className="text-gray-400 mb-6">
-              We've sent password reset instructions to:<br />
+              We&apos;ve sent password reset instructions to:<br />
               <span className="font-medium text-white">{email}</span>
             </p>
             <button 

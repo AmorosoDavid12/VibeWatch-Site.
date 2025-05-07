@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 
 export default function Home() {
   return (
@@ -50,7 +49,7 @@ export default function Home() {
           </div>
           <div className="absolute left-5 bottom-5 max-w-[600px]">
             <h1 className="text-3xl font-bold mb-2 text-shadow">The Lord of the Rings: The Two Towers</h1>
-            <p className="text-lg mb-3 opacity-90 text-shadow">Watch the teaser for Peter Jackson's epic fantasy adventure</p>
+            <p className="text-lg mb-3 opacity-90 text-shadow">Watch the teaser for Peter Jackson&apos;s epic fantasy adventure</p>
             <div className="flex items-center mb-3">
               <span className="flex items-center mr-4">
                 <span className="text-yellow-400 mr-1">⭐</span> 8.4 TMDB
