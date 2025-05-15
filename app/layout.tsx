@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "VibeWatch",
   description: "Track and discover your favorite content",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
