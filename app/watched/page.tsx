@@ -28,7 +28,7 @@ interface UserItem {
 }
 
 export default function Watchlist() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [watchedItems, setWatchedItems] = useState<WatchedItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -115,7 +115,7 @@ export default function Watchlist() {
           <div className="bg-[#1a1a1a] rounded-md p-8 text-center mb-8">
             <div className="text-3xl mb-4 text-gray-500">🔐</div>
             <h3 className="text-lg font-semibold mb-2">Sign in to see your watched list</h3>
-            <p className="text-gray-400 mb-4">Track movies and shows you've already watched</p>
+            <p className="text-gray-400 mb-4">Track movies and shows you&apos;ve already watched</p>
             <Link href="/signin" className="bg-[#3498db] text-white border-none px-4 py-2 rounded-md inline-block">
               Sign In
             </Link>
@@ -163,7 +163,7 @@ export default function Watchlist() {
           <div className="bg-[#1a1a1a] rounded-md p-8 text-center mb-8">
             <div className="text-3xl mb-4 text-gray-500">🍿</div>
             <h3 className="text-lg font-semibold mb-2">Your Watched list is empty</h3>
-            <p className="text-gray-400 mb-4">Add shows and movies you've already watched to your list.</p>
+            <p className="text-gray-400 mb-4">Add shows and movies you&apos;ve already watched to your list.</p>
             <Link href="/" className="bg-[#3498db] text-white border-none px-4 py-2 rounded-md inline-block">
               Browse popular movies
             </Link>

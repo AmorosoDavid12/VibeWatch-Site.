@@ -28,7 +28,7 @@ interface UserItem {
 }
 
 export default function Watchlist() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
