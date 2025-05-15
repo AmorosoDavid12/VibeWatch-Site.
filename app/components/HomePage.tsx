@@ -2,12 +2,10 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useAuth } from '../utils/auth-provider';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getTrending, getImageUrl, getYear, getTitle, TMDBMedia, getPopularCelebrities, TMDBPerson } from '../utils/tmdb-api';
 import Header from './Header';
 export default function Home() {
-  const { user: _user } = useAuth();
   const [trendingMedia, setTrendingMedia] = useState<TMDBMedia[]>([]);
   const [popularCelebrities, setPopularCelebrities] = useState<TMDBPerson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
