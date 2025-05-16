@@ -4,12 +4,20 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getTrending, getImageUrl, getYear, getTitle, TMDBMedia, getPopularCelebrities, TMDBPerson } from '../utils/tmdb-api';
+import { addToWatchlist, removeFromWatchlist, isInWatchlist, getWatchlist } from '../utils/watchlist';
+import { useAuth } from '../utils/auth-provider';
 import Header from './Header';
+
+type TrendingMediaWithWatchlist = TMDBMedia & { inWatchlist: boolean };
+
 export default function Home() {
-  const [trendingMedia, setTrendingMedia] = useState<TMDBMedia[]>([]);
+  const { user } = useAuth();
+  const [trendingMedia, setTrendingMedia] = useState<TrendingMediaWithWatchlist[]>([]);
   const [popularCelebrities, setPopularCelebrities] = useState<TMDBPerson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCelebsLoading, setIsCelebsLoading] = useState(true);
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const celebsScrollRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
@@ -44,8 +52,23 @@ export default function Home() {
       setIsLoading(true);
       try {
         const data = await getTrending();
-        setTrendingMedia(data.slice(0, 6)); // Only take the first 6 items
-        // Set random starting index for carousel
+        let mediaWithWatchlist = data.slice(0, 6).map(item => ({
+          ...item,
+          inWatchlist: false
+        }));
+
+        if (user) {
+          // Fetch all watchlist items once
+          const watchlist = await getWatchlist(user.id);
+          // Create a Set of item_keys for fast lookup
+          const watchlistKeys = new Set(watchlist.map(item => `${item.mediaType}_${item.id}`));
+          mediaWithWatchlist = mediaWithWatchlist.map(item => ({
+            ...item,
+            inWatchlist: watchlistKeys.has(`${item.media_type}_${item.id}`)
+          }));
+        }
+
+        setTrendingMedia(mediaWithWatchlist); // Only take the first 6 items
         setCurrentCarouselIndex(Math.floor(Math.random() * Math.min(data.length, 6)));
       } catch (error) {
         console.error('Error fetching trending data:', error);
@@ -55,7 +78,7 @@ export default function Home() {
     };
     
     fetchTrending();
-  }, []);
+  }, [user]); // Add user as a dependency to refetch when user changes
   
   // Set up carousel auto-rotation with ref to track interval
   useEffect(() => {
@@ -131,10 +154,27 @@ export default function Home() {
   
   const currentMedia = trendingMedia[currentCarouselIndex];
   
+  // Toast effect
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+  
   return (
     <div className="bg-[#121212] text-white min-h-screen">
       {/* Header/Navigation */}
       <Header />
+      {/* Toast notification */}
+      {toast && (
+        <div
+          className="fixed left-1/2 bottom-10 z-50 -translate-x-1/2 bg-black/90 text-white px-6 py-3 rounded-lg shadow-lg text-base font-medium transition-opacity duration-700 animate-fade-in-out"
+          style={{ pointerEvents: 'none' }}
+        >
+          {toast}
+        </div>
+      )}
       
       {/* Featured Content Carousel */}
       <div className="relative mb-8">
@@ -230,8 +270,73 @@ export default function Home() {
                       className="object-cover"
                     />
                   </div>
-                  <button className="absolute top-2 right-2 bg-black/60 text-white w-7 h-7 rounded-full flex items-center justify-center">
-                    +
+                  <button 
+                    className="absolute top-2 right-2 bg-black/60 text-white w-7 h-7 rounded-full flex items-center justify-center hover:text-yellow-400 transition-colors group"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      
+                      if (!user) {
+                        alert('Please sign in to add items to your watchlist');
+                        return;
+                      }
+                      
+                      setWatchlistLoading(true);
+                      try {
+                        // Create a copy of the media array to update state properly
+                        const updatedMedia = [...trendingMedia];
+                        const mediaIndex = updatedMedia.findIndex(item => item.id === media.id);
+                        
+                        if (mediaIndex !== -1) {
+                          const currentStatus = updatedMedia[mediaIndex].inWatchlist;
+                          let success;
+                          let dbId: number | undefined = undefined;
+                          if (currentStatus) {
+                            // Try to find dbId from the user's watchlist
+                            const watchlist = await getWatchlist(user.id);
+                            const found = watchlist.find(item => `${item.mediaType}_${item.id}` === `${media.media_type}_${media.id}`);
+                            dbId = found?.dbId;
+                            // Remove from watchlist using dbId if available
+                            success = await removeFromWatchlist(user.id, media.id, media.media_type, dbId);
+                          } else {
+                            // Add to watchlist
+                            success = await addToWatchlist(user.id, media);
+                          }
+                          
+                          if (success) {
+                            // Re-fetch the watchlist and update trendingMedia state
+                            const watchlist = await getWatchlist(user.id);
+                            const watchlistKeys = new Set(watchlist.map(item => `${item.mediaType}_${item.id}`));
+                            const newTrendingMedia = updatedMedia.map(item => ({
+                              ...item,
+                              inWatchlist: watchlistKeys.has(`${item.media_type}_${item.id}`)
+                            }));
+                            setTrendingMedia(newTrendingMedia);
+                            // Show feedback to user
+                            setToast(`${getTitle(media)} ${!currentStatus ? 'added to' : 'removed from'} watchlist`);
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Error updating watchlist:', error);
+                        alert('Failed to update watchlist. Please try again.');
+                      } finally {
+                        setWatchlistLoading(false);
+                      }
+                    }}
+                    disabled={watchlistLoading}
+                    title={media.inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+                  >
+                    {media.inWatchlist ? (
+                      // Filled bookmark icon
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                      </svg>
+                    ) : (
+                      // Outline bookmark icon that fills on hover
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" className="group-hover:fill-current transition-all duration-200" />
+                      </svg>
+                    )}
                   </button>
                 </div>
                 <div className="p-2.5">
@@ -335,4 +440,4 @@ export default function Home() {
       </div>
     </div>
   );
-} 
+}

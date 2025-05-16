@@ -4,8 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../utils/auth-provider';
 import { useEffect, useState } from 'react';
-import { supabase } from '../utils/supabase';
-import Header  from '../components/Header';
+import { getWatchlist, removeFromWatchlist } from '../utils/watchlist';
+import Header from '../components/Header';
 
 interface WatchlistItem {
   id: number | string;
@@ -40,34 +40,9 @@ export default function Watchlist() {
       }
 
       try {
-        const { data, error } = await supabase
-          .from('user_items')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('type', 'watchlist')
-          .order('updated_at', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching watchlist:', error);
-          return;
-        }
-
-        // Transform the data to extract the information from the value JSON
-        const transformedItems = data.map((item: UserItem) => {
-          const value = JSON.parse(item.value);
-          return {
-            id: value.id,
-            title: value.title,
-            imageUrl: value.poster_path ? `https://image.tmdb.org/t/p/w500${value.poster_path}` : '/placeholder.jpg',
-            rating: value.vote_average,
-            year: value.release_date ? new Date(value.release_date).getFullYear() : 'Unknown',
-            userRating: value.user_rating,
-            mediaType: value.media_type,
-            dbId: item.id // Original database ID for removal operations
-          };
-        });
-
-        setWatchlistItems(transformedItems);
+        // Use the getWatchlist utility function
+        const items = await getWatchlist(user.id);
+        setWatchlistItems(items);
       } catch (error) {
         console.error('Error processing watchlist:', error);
       } finally {
@@ -79,18 +54,14 @@ export default function Watchlist() {
   }, [user]);
 
   // Handle removing an item from watchlist
-  const removeFromWatchlist = async (dbId: number) => {
+  const removeFromWatchlistHandler = async (dbId: number, mediaId: number, mediaType: string) => {
     try {
-      const { error } = await supabase
-        .from('user_items')
-        .delete()
-        .eq('id', dbId);
-        
-      if (error) {
-        console.error('Error removing from watchlist:', error);
+      if (!user) return;
+      const success = await removeFromWatchlist(user.id, mediaId, mediaType, dbId);
+      if (!success) {
+        console.error('Error removing from watchlist');
         return;
       }
-      
       // Update the local state
       setWatchlistItems(prev => prev.filter(item => item.dbId !== dbId));
     } catch (error) {
@@ -132,7 +103,7 @@ export default function Watchlist() {
         ) : hasWatchlistItems ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {watchlistItems.map(item => (
-              <div key={item.id} className="bg-[#1a1a1a] rounded overflow-hidden transition-transform hover:-translate-y-1">
+              <div key={`${item.mediaType}_${item.id}`} className="bg-[#1a1a1a] rounded overflow-hidden transition-transform hover:-translate-y-1">
                 <div className="relative">
                   <Image 
                     src={item.imageUrl} 
@@ -142,7 +113,7 @@ export default function Watchlist() {
                     className="w-full aspect-[2/3] object-cover"
                   />
                   <button 
-                    onClick={() => removeFromWatchlist(item.dbId)}
+                    onClick={() => removeFromWatchlistHandler(item.dbId, Number(item.id), item.mediaType)}
                     className="absolute top-2 right-2 bg-black/60 text-white w-7 h-7 rounded-full flex items-center justify-center"
                   >
                     ✕
@@ -177,4 +148,4 @@ export default function Watchlist() {
       </div>
     </div>
   );
-} 
+}
