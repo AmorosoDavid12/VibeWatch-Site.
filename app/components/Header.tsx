@@ -41,7 +41,7 @@ const Header = () => {
       try {
         setProfile(JSON.parse(cachedProfile));
         setIsLoading(false);
-      } catch (e) {
+      } catch {
         // Invalid JSON, ignore
       }
     }
