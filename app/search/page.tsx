@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Header from '../components/Header';
-import Navigation from '../components/Navigation';
-import MovieCard from '../components/MovieCard';
+// import Navigation from '../components/Navigation';
+// import MovieCard from '../components/MovieCard';
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,7 +84,7 @@ export default function SearchPage() {
           <div>
             <h2 className="text-lg font-semibold mb-4">Results for &quot;{searchQuery}&quot;</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {searchResults.map(item => (
+              {/* {searchResults.map(item => (
                 <MovieCard 
                   key={item.id}
                   id={item.id}
@@ -93,6 +93,27 @@ export default function SearchPage() {
                   rating={item.rating}
                   year={item.year}
                 />
+              ))} */}
+              {searchResults.map(item => (
+                <div key={item.id} className="bg-[#1a1a1a] rounded overflow-hidden transition-transform hover:-translate-y-1">
+                  <div className="relative aspect-[2/3]">
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="object-cover w-full h-full rounded-t"
+                    />
+                  </div>
+                  <div className="p-2.5">
+                    <h3 className="font-semibold text-sm mb-1 truncate">{item.title}</h3>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>{item.year}</span>
+                      <div className="flex items-center">
+                        <span className="text-yellow-400 mr-1">⭐</span>
+                        <span>{item.rating}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -103,7 +124,7 @@ export default function SearchPage() {
         )}
       </div>
       
-      <Navigation />
+      {/* <Navigation /> */}
     </main>
   );
 } 
