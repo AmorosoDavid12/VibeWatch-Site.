@@ -18,15 +18,6 @@ interface WatchlistItem {
   dbId: number; // Original database ID for removal operations
 }
 
-interface UserItem {
-  id: number;
-  user_id: string;
-  item_key: string;
-  value: string;
-  type: string;
-  updated_at: string;
-}
-
 export default function Watchlist() {
   const { user } = useAuth();
   const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);

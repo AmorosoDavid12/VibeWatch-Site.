@@ -91,6 +91,16 @@ export const isInWatchlist = async (userId: string, mediaId: number, mediaType: 
   }
 };
 
+// Add a type for the DB row
+interface UserItemRow {
+  id: number;
+  user_id: string;
+  item_key: string;
+  value: string;
+  type: string;
+  updated_at: string;
+}
+
 /**
  * Get all items in the user's watchlist
  */
@@ -111,7 +121,7 @@ export const getWatchlist = async (userId: string) => {
     }
 
     // Transform the data to extract the information from the value JSON
-    return data.map((item: any) => {
+    return (data as UserItemRow[]).map((item) => {
       const value = JSON.parse(item.value);
       return {
         id: value.id,

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Header from '../components/Header';
+import Image from 'next/image';
 // import Navigation from '../components/Navigation';
 // import MovieCard from '../components/MovieCard';
 
@@ -97,10 +98,12 @@ export default function SearchPage() {
               {searchResults.map(item => (
                 <div key={item.id} className="bg-[#1a1a1a] rounded overflow-hidden transition-transform hover:-translate-y-1">
                   <div className="relative aspect-[2/3]">
-                    <img
+                    <Image
                       src={item.imageUrl}
                       alt={item.title}
+                      fill
                       className="object-cover w-full h-full rounded-t"
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
                     />
                   </div>
                   <div className="p-2.5">

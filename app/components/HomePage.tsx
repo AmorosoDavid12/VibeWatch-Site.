@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getTrending, getImageUrl, getYear, getTitle, TMDBMedia, getPopularCelebrities, TMDBPerson } from '../utils/tmdb-api';
-import { addToWatchlist, removeFromWatchlist, isInWatchlist, getWatchlist } from '../utils/watchlist';
+import { addToWatchlist, removeFromWatchlist, getWatchlist } from '../utils/watchlist';
 import { useAuth } from '../utils/auth-provider';
 import Header from './Header';
 

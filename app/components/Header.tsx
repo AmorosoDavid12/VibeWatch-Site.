@@ -99,7 +99,7 @@ const Header = () => {
     fetchWatchlistCount();
 
     // Set up a subscription to user_items changes for watchlist
-    let subscription: any;
+    let subscription: ReturnType<typeof supabase.channel> | undefined;
     if (user) {
       subscription = supabase
         .channel('watchlist_changes')
