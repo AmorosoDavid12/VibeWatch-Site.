@@ -10,15 +10,32 @@ export const addToWatchlist = async (userId: string, media: TMDBMedia): Promise<
     return false;
   }
 
+  // Normalize the media object to match the mobile app's expected structure
+  const normalizedMedia = {
+    id: media.id,
+    title: media.title || media.name || 'Untitled',
+    poster_path: media.poster_path,
+    media_type: media.media_type || (media.first_air_date ? 'tv' : 'movie'),
+    release_date: media.release_date || media.first_air_date || '',
+    vote_average: media.vote_average || 0,
+    genres: [],
+    genre_ids: (media as any).genre_ids || [],
+    overview: media.overview || '',
+    cast: [],
+    crew: [],
+    position: 0, // The mobile app expects position for ordering
+    added_at: Date.now() // Timestamp when added
+  };
+
   try {
-    // Store the media item in the user_items table
+    // Store the normalized media item in the user_items table with mobile app compatible key format
     const { error } = await supabase
       .from('user_items')
       .insert({
         user_id: userId,
-        item_key: `${media.media_type}_${media.id}`, // Create a unique key for the item
+        item_key: `watchlist_${normalizedMedia.id}`, // Match mobile app format: watchlist_[id]
         type: 'watchlist',
-        value: JSON.stringify(media) // Store the entire media object
+        value: JSON.stringify(normalizedMedia)
       });
 
     if (error) {
@@ -36,7 +53,7 @@ export const addToWatchlist = async (userId: string, media: TMDBMedia): Promise<
 /**
  * Remove a media item from the user's watchlist in Supabase
  */
-export const removeFromWatchlist = async (userId: string, mediaId: number, mediaType: string, dbId?: number): Promise<boolean> => {
+export const removeFromWatchlist = async (userId: string, mediaId: number, mediaType?: string, dbId?: number): Promise<boolean> => {
   if (!userId) {
     console.error('User ID is required to remove from watchlist');
     return false;
@@ -45,12 +62,20 @@ export const removeFromWatchlist = async (userId: string, mediaId: number, media
   try {
     let query = supabase.from('user_items').delete();
     if (dbId) {
+      // If we have the database ID, use that for most precise deletion
       query = query.eq('id', dbId);
-    } else {
+    } else if (mediaId && !mediaType) {
+      // Mobile app style: delete by just the TMDB id using watchlist_[id] format
       query = query
         .eq('user_id', userId)
-        .eq('item_key', `${mediaType}_${mediaId}`)
-        .eq('type', 'watchlist');
+        .eq('type', 'watchlist')
+        .or(`item_key.eq.watchlist_${mediaId},value.ilike.%"id":${mediaId}%`); // Try both key formats
+    } else {
+      // Web app style with mediaType provided: try all possible formats
+      query = query
+        .eq('user_id', userId)
+        .eq('type', 'watchlist')
+        .or(`item_key.eq.watchlist_${mediaId},item_key.eq.${mediaType}_${mediaId},value.ilike.%"id":${mediaId}%`);
     }
     const { error } = await query;
     if (error) {
@@ -71,20 +96,20 @@ export const isInWatchlist = async (userId: string, mediaId: number, mediaType: 
   if (!userId) return false;
 
   try {
+    // Check for either the mobile format (watchlist_[id]) or web format ([media_type]_[id])
     const { data, error } = await supabase
       .from('user_items')
       .select('id')
       .eq('user_id', userId)
-      .eq('item_key', `${mediaType}_${mediaId}`)
       .eq('type', 'watchlist')
-      .single();
+      .or(`item_key.eq.watchlist_${mediaId},item_key.eq.${mediaType}_${mediaId}`);
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 is the error code for no rows returned
+    if (error) {
       console.error('Error checking watchlist:', error);
       return false;
     }
 
-    return !!data;
+    return data && data.length > 0;
   } catch (error) {
     console.error('Error checking watchlist:', error);
     return false;
