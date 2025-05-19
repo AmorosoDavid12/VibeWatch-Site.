@@ -19,7 +19,7 @@ export const addToWatchlist = async (userId: string, media: TMDBMedia): Promise<
     release_date: media.release_date || media.first_air_date || '',
     vote_average: media.vote_average || 0,
     genres: [],
-    genre_ids: (media as any).genre_ids || [],
+    genre_ids: ('genre_ids' in media ? media.genre_ids : []) as number[],
     overview: media.overview || '',
     cast: [],
     crew: [],
