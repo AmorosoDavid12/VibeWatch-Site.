@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Dispatch, SetStateAction } from 'react';
 import { getTrending, getImageUrl, getYear, getTitle, TMDBMedia, getPopularCelebrities, TMDBPerson } from '../utils/tmdb-api';
 import { addToWatchlist, removeFromWatchlist, getWatchlist } from '../utils/watchlist';
 import { useAuth } from '../utils/auth-provider';
@@ -28,7 +28,7 @@ export default function Home() {
   const carouselIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const carouselInterval = 11000; // 11 seconds between slides
   
-  const handleScroll = useCallback((ref: React.RefObject<HTMLDivElement | null>, setShowL: Function, setShowR: Function) => {
+  const handleScroll = useCallback((ref: React.RefObject<HTMLDivElement | null>, setShowL: Dispatch<SetStateAction<boolean>>, setShowR: Dispatch<SetStateAction<boolean>>) => {
     if (ref.current) {
       const { scrollLeft, scrollWidth, clientWidth } = ref.current;
       setShowL(scrollLeft > 0);
@@ -81,9 +81,11 @@ export default function Home() {
           inWatchlist: false
         }));
 
-        if (user) {
+        const currentUserId = user?.id; // Define currentUserId based on user object
+
+        if (currentUserId) { // Use currentUserId for the condition
           // Fetch all watchlist items once
-          const watchlist = await getWatchlist(user.id);
+          const watchlist = await getWatchlist(currentUserId); // Pass currentUserId
           // Create a Set of item_keys for fast lookup
           const watchlistKeys = new Set(watchlist.map(item => `${item.mediaType}_${item.id}`));
           mediaWithWatchlist = mediaWithWatchlist.map(item => ({
@@ -106,7 +108,7 @@ export default function Home() {
     };
     
     fetchTrending();
-  }, [user?.id]); // Add user?.id as a dependency to refetch when user changes
+  }, [user?.id, handleCelebsScroll, handleFeaturedScroll]); // Updated dependencies
   
   // Set up carousel auto-rotation with ref to track interval
   useEffect(() => {
