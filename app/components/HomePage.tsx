@@ -19,40 +19,64 @@ export default function Home() {
   const [watchlistLoading, setWatchlistLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const celebsScrollRef = useRef<HTMLDivElement>(null);
+  const featuredScrollRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
+  const [showFeaturedLeftArrow, setShowFeaturedLeftArrow] = useState(false);
+  const [showFeaturedRightArrow, setShowFeaturedRightArrow] = useState(true);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const carouselIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const carouselInterval = 11000; // 11 seconds between slides
   
-  // Check scroll position for celebrity carousel
-  const handleCelebsScroll = useCallback(() => {
-    if (celebsScrollRef.current) {
-      setShowLeftArrow(celebsScrollRef.current.scrollLeft > 0);
+  const handleScroll = useCallback((ref: React.RefObject<HTMLDivElement | null>, setShowL: Function, setShowR: Function) => {
+    if (ref.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = ref.current;
+      setShowL(scrollLeft > 0);
+      setShowR(scrollLeft + clientWidth < scrollWidth - 1);
     }
   }, []);
+
+  // Check scroll position for celebrity carousel
+  const handleCelebsScroll = useCallback(() => {
+    handleScroll(celebsScrollRef, setShowLeftArrow, setShowRightArrow);
+  }, [handleScroll]);
+  
+  // Check scroll position for featured items
+  const handleFeaturedScroll = useCallback(() => {
+    handleScroll(featuredScrollRef, setShowFeaturedLeftArrow, setShowFeaturedRightArrow);
+  }, [handleScroll]);
   
   // Set up scroll event listener
   useEffect(() => {
-    const scrollContainer = celebsScrollRef.current;
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleCelebsScroll);
-      // Check initial state
+    const celebsContainer = celebsScrollRef.current;
+    const featuredContainer = featuredScrollRef.current;
+    
+    if (celebsContainer) {
+      celebsContainer.addEventListener('scroll', handleCelebsScroll);
       handleCelebsScroll();
     }
     
+    if (featuredContainer) {
+      featuredContainer.addEventListener('scroll', handleFeaturedScroll);
+      handleFeaturedScroll();
+    }
+    
     return () => {
-      if (scrollContainer) {
-        scrollContainer.removeEventListener('scroll', handleCelebsScroll);
+      if (celebsContainer) {
+        celebsContainer.removeEventListener('scroll', handleCelebsScroll);
+      }
+      if (featuredContainer) {
+        featuredContainer.removeEventListener('scroll', handleFeaturedScroll);
       }
     };
-  }, [handleCelebsScroll, isCelebsLoading]);
+  }, [handleCelebsScroll, handleFeaturedScroll, isCelebsLoading, isLoading]);
   
   useEffect(() => {
     const fetchTrending = async () => {
       setIsLoading(true);
       try {
         const data = await getTrending();
-        let mediaWithWatchlist = data.slice(0, 6).map(item => ({
+        let mediaWithWatchlist = data.map(item => ({
           ...item,
           inWatchlist: false
         }));
@@ -68,8 +92,12 @@ export default function Home() {
           }));
         }
 
-        setTrendingMedia(mediaWithWatchlist); // Only take the first 6 items
-        setCurrentCarouselIndex(Math.floor(Math.random() * Math.min(data.length, 6)));
+        setTrendingMedia(mediaWithWatchlist); // Use all items instead of just first 6
+        setCurrentCarouselIndex(Math.floor(Math.random() * data.length)); // Remove Math.min(data.length, 6)
+        setTimeout(() => {
+          handleFeaturedScroll();
+          handleCelebsScroll();
+        }, 0);
       } catch (error) {
         console.error('Error fetching trending data:', error);
       } finally {
@@ -78,7 +106,7 @@ export default function Home() {
     };
     
     fetchTrending();
-  }, [user]); // Add user as a dependency to refetch when user changes
+  }, [user?.id]); // Add user?.id as a dependency to refetch when user changes
   
   // Set up carousel auto-rotation with ref to track interval
   useEffect(() => {
@@ -90,7 +118,7 @@ export default function Home() {
     
     if (!isLoading && trendingMedia.length > 0) {
       carouselIntervalRef.current = setInterval(() => {
-        setCurrentCarouselIndex((prevIndex) => (prevIndex + 1) % trendingMedia.length);
+        setCurrentCarouselIndex((prevIndex) => (prevIndex + 1) % trendingMedia.length); // Remove Math.min(trendingMedia.length, 6)
       }, carouselInterval);
       
       return () => {
@@ -110,12 +138,12 @@ export default function Home() {
     }
     
     setCurrentCarouselIndex((prevIndex) => 
-      prevIndex === 0 ? trendingMedia.length - 1 : prevIndex - 1
+      prevIndex === 0 ? trendingMedia.length - 1 : prevIndex - 1 // Remove Math.min(trendingMedia.length, 6)
     );
     
     // Restart interval
     carouselIntervalRef.current = setInterval(() => {
-      setCurrentCarouselIndex((prevIndex) => (prevIndex + 1) % trendingMedia.length);
+      setCurrentCarouselIndex((prevIndex) => (prevIndex + 1) % trendingMedia.length); // Remove Math.min(trendingMedia.length, 6)
     }, carouselInterval);
   };
   
@@ -127,12 +155,12 @@ export default function Home() {
     }
     
     setCurrentCarouselIndex((prevIndex) => 
-      (prevIndex + 1) % trendingMedia.length
+      (prevIndex + 1) % trendingMedia.length // Remove Math.min(trendingMedia.length, 6)
     );
     
     // Restart interval
     carouselIntervalRef.current = setInterval(() => {
-      setCurrentCarouselIndex((prevIndex) => (prevIndex + 1) % trendingMedia.length);
+      setCurrentCarouselIndex((prevIndex) => (prevIndex + 1) % trendingMedia.length); // Remove Math.min(trendingMedia.length, 6)
     }, carouselInterval);
   };
   
@@ -178,7 +206,7 @@ export default function Home() {
       
       {/* Featured Content Carousel */}
       <div className="relative mb-8">
-        <div className="max-w-[1300px] mx-auto relative h-[420px] overflow-hidden">
+        <div className="max-w-[1300px] mx-auto relative h-[500px] overflow-hidden">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-500 text-5xl text-white">
               Loading...
@@ -218,14 +246,14 @@ export default function Home() {
           
           <button 
             onClick={handlePrevCarousel}
-            className="absolute top-1/2 left-2.5 -translate-y-1/2 bg-black/50 text-white border-none w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-xl"
-          >
+            className="absolute top-[45%] left-1 -translate-y-1/2 bg-black/90 backdrop-blur-sm text-white border-none w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-lg z-10 hover:bg-black hover:text-white hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-xl group"
+            >
             ❮
           </button>
           <button 
             onClick={handleNextCarousel}
-            className="absolute top-1/2 right-2.5 -translate-y-1/2 bg-black/50 text-white border-none w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-xl"
-          >
+            className="absolute top-[45%] right-1 -translate-y-1/2 bg-black/90 backdrop-blur-sm text-white border-none w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-lg z-10 hover:bg-black hover:text-white hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-xl group"
+            >
             ❯
           </button>
         </div>
@@ -233,126 +261,167 @@ export default function Home() {
       
       <div className="max-w-[1300px] mx-auto px-4">
         {/* Featured today */}
-        <div className="flex justify-between items-center my-8">
+        <div className="flex justify-between items-center my-4 mt-8">
           <h2 className="text-2xl font-semibold text-[#FF6B6B]">Featured today</h2>
           <Link href="/featured" className="text-[#3498db] text-sm">See all</Link>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
-          {isLoading ? (
-            // Loading skeleton
-            Array(6).fill(0).map((_, i) => (
-              <div key={i} className="bg-[#1a1a1a] rounded overflow-hidden transition-transform hover:-translate-y-1 animate-pulse">
-                <div className="relative">
-                  <div className="flex items-center justify-center bg-gray-500 text-white aspect-[2/3]">
-                    Loading...
+        <div className="relative">
+          <div 
+            ref={featuredScrollRef}
+            className="flex overflow-x-auto gap-4 py-4 mb-8 scroll-smooth hide-scrollbar"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {isLoading ? (
+              // Loading skeleton
+              Array(8).fill(0).map((_, i) => (
+                <div key={i} className="flex-none bg-[#1a1a1a] rounded overflow-hidden transition-transform hover:-translate-y-1 animate-pulse" style={{ minWidth: '180px', width: '180px' }}>
+                  <div className="relative">
+                    <div className="flex items-center justify-center bg-gray-500 text-white aspect-[2/3]">
+                      Loading...
+                    </div>
                   </div>
-                </div>
-                <div className="p-2.5">
-                  <div className="h-4 bg-gray-600 rounded mb-2"></div>
-                  <div className="flex justify-between">
-                    <div className="h-3 w-10 bg-gray-600 rounded"></div>
-                    <div className="h-3 w-16 bg-gray-600 rounded"></div>
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            trendingMedia.map((media) => (
-              <div key={media.id} className="bg-[#1a1a1a] rounded overflow-hidden transition-transform hover:-translate-y-1">
-                <div className="relative">
-                  <div className="aspect-[2/3] relative">
-                    <Image
-                      src={getImageUrl(media.poster_path)}
-                      alt={getTitle(media)}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
-                      className="object-cover"
-                    />
-                  </div>
-                  <button 
-                    className="absolute top-2 right-2 bg-black/60 text-white w-7 h-7 rounded-full flex items-center justify-center hover:text-yellow-400 transition-colors group"
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      
-                      if (!user) {
-                        alert('Please sign in to add items to your watchlist');
-                        return;
-                      }
-                      
-                      setWatchlistLoading(true);
-                      try {
-                        // Create a copy of the media array to update state properly
-                        const updatedMedia = [...trendingMedia];
-                        const mediaIndex = updatedMedia.findIndex(item => item.id === media.id);
-                        
-                        if (mediaIndex !== -1) {
-                          const currentStatus = updatedMedia[mediaIndex].inWatchlist;
-                          let success;
-                          let dbId: number | undefined = undefined;
-                          if (currentStatus) {
-                            // Try to find dbId from the user's watchlist
-                            const watchlist = await getWatchlist(user.id);
-                            const found = watchlist.find(item => `${item.mediaType}_${item.id}` === `${media.media_type}_${media.id}`);
-                            dbId = found?.dbId;
-                            // Remove from watchlist using dbId if available
-                            success = await removeFromWatchlist(user.id, media.id, media.media_type, dbId);
-                          } else {
-                            // Add to watchlist
-                            success = await addToWatchlist(user.id, media);
-                          }
-                          
-                          if (success) {
-                            // Re-fetch the watchlist and update trendingMedia state
-                            const watchlist = await getWatchlist(user.id);
-                            const watchlistKeys = new Set(watchlist.map(item => `${item.mediaType}_${item.id}`));
-                            const newTrendingMedia = updatedMedia.map(item => ({
-                              ...item,
-                              inWatchlist: watchlistKeys.has(`${item.media_type}_${item.id}`)
-                            }));
-                            setTrendingMedia(newTrendingMedia);
-                            // Show feedback to user
-                            setToast(`${getTitle(media)} ${!currentStatus ? 'added to' : 'removed from'} watchlist`);
-                          }
-                        }
-                      } catch (error) {
-                        console.error('Error updating watchlist:', error);
-                        alert('Failed to update watchlist. Please try again.');
-                      } finally {
-                        setWatchlistLoading(false);
-                      }
-                    }}
-                    disabled={watchlistLoading}
-                    title={media.inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
-                  >
-                    {media.inWatchlist ? (
-                      // Filled bookmark icon
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-                      </svg>
-                    ) : (
-                      // Outline bookmark icon that fills on hover
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" stroke="currentColor" fill="none">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" className="group-hover:fill-current transition-all duration-200" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-                <div className="p-2.5">
-                  <h3 className="font-semibold text-sm mb-1 truncate">
-                    {getTitle(media)}
-                  </h3>
-                  <div className="flex justify-between text-xs text-gray-400">
-                    <span>{getYear(media)}</span>
-                    <div className="flex items-center">
-                      <span className="text-yellow-400 mr-1">⭐</span>
-                      <span>{media.vote_average.toFixed(1)}</span>
+                  <div className="p-2.5">
+                    <div className="h-4 bg-gray-600 rounded mb-2"></div>
+                    <div className="flex justify-between">
+                      <div className="h-3 w-10 bg-gray-600 rounded"></div>
+                      <div className="h-3 w-16 bg-gray-600 rounded"></div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))
+            ) : (
+              trendingMedia.map((media) => (
+                <div key={media.id} className="flex-none bg-[#1a1a1a] rounded overflow-hidden transition-transform hover:-translate-y-1" style={{ minWidth: '180px', width: '180px' }}>
+                  <div className="relative">
+                    <div className="aspect-[2/3] relative">
+                      <Image
+                        src={getImageUrl(media.poster_path)}
+                        alt={getTitle(media)}
+                        fill
+                        sizes="180px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <button 
+                      className="absolute top-2 right-2 bg-black/60 text-white w-7 h-7 rounded-full flex items-center justify-center hover:text-yellow-400 transition-colors group"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        if (!user) {
+                          alert('Please sign in to add items to your watchlist');
+                          return;
+                        }
+                        
+                        setWatchlistLoading(true);
+                        try {
+                          // Create a copy of the media array to update state properly
+                          const updatedMedia = [...trendingMedia];
+                          const mediaIndex = updatedMedia.findIndex(item => item.id === media.id);
+                          
+                          if (mediaIndex !== -1) {
+                            const currentStatus = updatedMedia[mediaIndex].inWatchlist;
+                            let success;
+                            let dbId: number | undefined = undefined;
+                            if (currentStatus) {
+                              // Try to find dbId from the user's watchlist
+                              const watchlist = await getWatchlist(user.id);
+                              const found = watchlist.find(item => `${item.mediaType}_${item.id}` === `${media.media_type}_${media.id}`);
+                              dbId = found?.dbId;
+                              // Remove from watchlist using dbId if available
+                              success = await removeFromWatchlist(user.id, media.id, media.media_type, dbId);
+                            } else {
+                              // Add to watchlist
+                              success = await addToWatchlist(user.id, media);
+                            }
+                            
+                            if (success) {
+                              // Re-fetch the watchlist and update trendingMedia state
+                              const watchlist = await getWatchlist(user.id);
+                              const watchlistKeys = new Set(watchlist.map(item => `${item.mediaType}_${item.id}`));
+                              const newTrendingMedia = updatedMedia.map(item => ({
+                                ...item,
+                                inWatchlist: watchlistKeys.has(`${item.media_type}_${item.id}`)
+                              }));
+                              setTrendingMedia(newTrendingMedia);
+                              // Show feedback to user
+                              setToast(`${getTitle(media)} ${!currentStatus ? 'added to' : 'removed from'} watchlist`);
+                            }
+                          }
+                        } catch (error) {
+                          console.error('Error updating watchlist:', error);
+                          alert('Failed to update watchlist. Please try again.');
+                        } finally {
+                          setWatchlistLoading(false);
+                        }
+                      }}
+                      disabled={watchlistLoading}
+                      title={media.inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+                    >
+                      {media.inWatchlist ? (
+                        // Filled bookmark icon
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                        </svg>
+                      ) : (
+                        // Outline bookmark icon that fills on hover
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" stroke="currentColor" fill="none">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" className="group-hover:fill-current transition-all duration-200" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  <div className="p-2.5">
+                    <h3 className="font-semibold text-sm mb-1 truncate">
+                      {getTitle(media)}
+                    </h3>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>{getYear(media)}</span>
+                      <div className="flex items-center">
+                        <span className="text-yellow-400 mr-1">⭐</span>
+                        <span>{media.vote_average.toFixed(1)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          
+          {!isLoading && (
+            <>
+              {showFeaturedLeftArrow && (
+                <button 
+                  onClick={() => {
+                    if (featuredScrollRef.current) {
+                      // Scroll by 5 cards (card width + gap)
+                      const cardWidth = 196; // 180px + 16px gap
+                      featuredScrollRef.current.scrollLeft -= cardWidth * 5;
+                    }
+                  }}
+                  className="absolute top-[45%] left-1 -translate-y-1/2 bg-black/90 backdrop-blur-sm text-white border-none w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-lg z-10 hover:bg-black hover:text-white hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-xl group"
+                  aria-label="Scroll left"
+                >
+                  ❮
+                </button>
+              )}
+              {showFeaturedRightArrow && (
+                <button 
+                  onClick={() => {
+                    if (featuredScrollRef.current) {
+                      // Scroll by 5 cards (card width + gap)
+                      const cardWidth = 196; // 180px + 16px gap
+                      featuredScrollRef.current.scrollLeft += cardWidth * 5;
+                    }
+                  }}
+                  className="absolute top-[45%] right-1 -translate-y-1/2 bg-black/90 backdrop-blur-sm text-white border-none w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-lg z-10 hover:bg-black hover:text-white hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-xl group"
+                  aria-label="Scroll right"
+                >
+                  ❯
+                </button>
+              )}
+            </>
           )}
         </div>
         
@@ -409,25 +478,27 @@ export default function Home() {
                       celebsScrollRef.current.scrollLeft -= cardWidth * 5;
                     }
                   }}
-                  className="absolute top-1/3 left-0.5 -translate-y-1/2 bg-black/70 text-white border-none w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-xl z-10 hover:bg-black/90"
+                  className="absolute top-[40%] left-1 -translate-y-1/2 bg-black/90 backdrop-blur-sm text-white border-none w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-lg z-10 hover:bg-black hover:text-white hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-xl group"
                   aria-label="Scroll left"
                 >
                   ❮
                 </button>
               )}
-              <button 
-                onClick={() => {
-                  if (celebsScrollRef.current) {
-                    // Scroll by 5 cards (card width + gap)
-                    const cardWidth = 176; // 160px + 16px gap
-                    celebsScrollRef.current.scrollLeft += cardWidth * 5;
-                  }
-                }}
-                className="absolute top-1/3 right-0.5 -translate-y-1/2 bg-black/70 text-white border-none w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-xl z-10 hover:bg-black/90"
-                aria-label="Scroll right"
-              >
-                ❯
-              </button>
+              {showRightArrow && (
+                <button 
+                  onClick={() => {
+                    if (celebsScrollRef.current) {
+                      // Scroll by 5 cards (card width + gap)
+                      const cardWidth = 176; // 160px + 16px gap
+                      celebsScrollRef.current.scrollLeft += cardWidth * 5;
+                    }
+                  }}
+                  className="absolute top-[40%] right-1 -translate-y-1/2 bg-black/90 backdrop-blur-sm text-white border-none w-10 h-10 rounded-full flex items-center justify-center cursor-pointer text-lg z-10 hover:bg-black hover:text-white hover:scale-110 transition-all duration-200 shadow-lg hover:shadow-xl group"
+                  aria-label="Scroll right"
+                >
+                  ❯
+                </button>
+              )}
             </>
           )}
         </div>
