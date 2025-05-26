@@ -227,6 +227,11 @@ export default function Home() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
               </div>
+              {currentMedia && (
+                <Link href={`/title?id=${currentMedia.id}&type=${currentMedia.media_type}`} className="absolute inset-0 cursor-pointer z-0">
+                  <span className="sr-only">View {getTitle(currentMedia)} details</span>
+                </Link>
+              )}
               <div className="absolute left-5 bottom-5 max-w-[600px] z-10">
                 <h1 className="text-3xl font-bold mb-2 text-shadow">{getTitle(currentMedia)}</h1>
                 <p className="text-lg mb-3 opacity-90 text-shadow line-clamp-2">
@@ -239,9 +244,11 @@ export default function Home() {
                   </span>
                   <span>{getYear(currentMedia)} • {currentMedia?.media_type}</span>
                 </div>
-                <button className="bg-white/20 border-none text-white py-2 px-4 rounded flex items-center transition-colors hover:bg-white/30">
-                  ▶ <span className="ml-2">Watch Trailer</span>
-                </button>
+                {currentMedia && (
+                  <Link href={`/title?id=${currentMedia.id}&type=${currentMedia.media_type}`} className="bg-white/20 border-none text-white py-2 px-4 rounded flex items-center transition-colors hover:bg-white/30 w-fit">
+                    ▶ <span className="ml-2">View Details</span>
+                  </Link>
+                )}
               </div>
             </>
           )}
@@ -294,7 +301,7 @@ export default function Home() {
               ))
             ) : (
               trendingMedia.map((media) => (
-                <div key={media.id} className="flex-none bg-[#1a1a1a] rounded overflow-hidden transition-transform hover:-translate-y-1" style={{ minWidth: '180px', width: '180px' }}>
+                <Link key={media.id} href={`/title?id=${media.id}&type=${media.media_type}`} className="flex-none bg-[#1a1a1a] rounded overflow-hidden transition-transform hover:-translate-y-1 cursor-pointer" style={{ minWidth: '180px', width: '180px' }}>
                   <div className="relative">
                     <div className="aspect-[2/3] relative">
                       <Image
@@ -386,7 +393,7 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))
             )}
           </div>
@@ -452,7 +459,7 @@ export default function Home() {
               ))
             ) : (
               popularCelebrities.map((celebrity) => (
-                <div key={celebrity.id} className="flex-none text-center" style={{ minWidth: '160px' }}>
+                <Link key={celebrity.id} href={`/person?id=${celebrity.id}`} className="flex-none text-center cursor-pointer hover:opacity-90 transition-opacity" style={{ minWidth: '160px' }}>
                   <div className="relative w-[160px] h-[160px] rounded-full mb-3 overflow-hidden">
                     <Image 
                       src={getImageUrl(celebrity.profile_path, 'w185')} 
@@ -464,7 +471,7 @@ export default function Home() {
                   </div>
                   <div className="text-base font-medium mb-1.5 px-1">{celebrity.name}</div>
                   {/* <div className="text-sm text-gray-400">{celebrity.known_for_department}</div> */}
-                </div>
+                </Link>
               ))
             )}
           </div>
