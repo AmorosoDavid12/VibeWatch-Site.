@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { getMovieDetails, getTVDetails, getImageUrl, getTitle, getYear, formatRuntime, formatCurrency, TMDBMovieDetails, TMDBTVDetails } from '../utils/tmdb-api';
@@ -10,7 +10,8 @@ import Header from '../components/Header';
 
 type MediaDetails = TMDBMovieDetails | TMDBTVDetails;
 
-export default function TitlePage() {
+// Create a client component that uses useSearchParams
+function TitleContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
@@ -98,8 +99,8 @@ export default function TitlePage() {
     return (
       <div className="bg-[#121212] text-white min-h-screen">
         <Header />
-        <div className="flex items-center justify-center h-96">
-          <div className="text-2xl">Loading...</div>
+        <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[80vh]">
+          <div className="animate-pulse text-xl">Loading...</div>
         </div>
       </div>
     );
@@ -109,8 +110,11 @@ export default function TitlePage() {
     return (
       <div className="bg-[#121212] text-white min-h-screen">
         <Header />
-        <div className="flex items-center justify-center h-96">
-          <div className="text-2xl">Media not found</div>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Title not found</h1>
+            <p>The requested title could not be found.</p>
+          </div>
         </div>
       </div>
     );
@@ -324,5 +328,14 @@ export default function TitlePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main page component that wraps the client component with Suspense
+export default function TitlePage() {
+  return (
+    <Suspense fallback={<div className="bg-[#121212] text-white min-h-screen flex justify-center items-center"><div className="animate-pulse text-xl">Loading...</div></div>}>
+      <TitleContent />
+    </Suspense>
   );
 }
