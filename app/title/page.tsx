@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import Link from 'next/link';
 import { getMovieDetails, getTVDetails, getImageUrl, getTitle, getYear, formatRuntime, formatCurrency, TMDBMovieDetails, TMDBTVDetails } from '../utils/tmdb-api';
 import { addToWatchlist, removeFromWatchlist, getWatchlist } from '../utils/watchlist';
 import { useAuth } from '../utils/auth-provider';
