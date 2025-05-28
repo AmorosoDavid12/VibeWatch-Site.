@@ -49,6 +49,9 @@ import {
 import { addToWatchlist, removeFromWatchlist, getWatchlist } from '../utils/watchlist';
 import { useAuth } from '../utils/auth-provider';
 import Header from '../components/Header';
+import Trailers from './components/Trailers';
+import Gallery from './components/Gallery';
+import RelatedContent from './components/RelatedContent';
 
 type MediaDetails = TMDBMovieDetails | TMDBTVDetails;
 
@@ -582,101 +585,10 @@ function TitleContent() {
             )}
 
             {/* Media Gallery - Videos (Trailers) */}
-            {videos && videos.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-2xl font-semibold text-[#FF6B6B] mb-4">Trailers</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {videos.map((video, index) => (
-                    <div key={`${video.id}-${index}`} className="aspect-video bg-[#1a1a1a] rounded-lg overflow-hidden">
-                      <iframe
-                        width="100%"
-                        height="100%"
-                        src={`https://www.youtube.com/embed/${video.key}`}
-                        title={video.name}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <Trailers videos={videos} />
 
-            {/* Media Gallery - Images (Backdrops and Posters) */}
-            {images && (images.backdrops.length > 0 || images.posters.length > 0) && (
-              <div className="mb-8">
-                <h2 className="text-2xl font-semibold text-[#FF6B6B] mb-4">Gallery</h2>
-                {/* Display a few backdrops */} 
-                {images.backdrops.length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="text-xl font-semibold text-gray-300 mb-2">Backdrops</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {images.backdrops.slice(0, 6).map((img, index) => (
-                        <div key={`${img.file_path}-${index}`} className="aspect-video relative bg-[#1a1a1a] rounded-lg overflow-hidden">
-                           <Image
-                            src={getImageUrl(img.file_path, 'w780')}
-                            alt="Backdrop image"
-                            fill
-                            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
-                            className="object-cover"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {/* Display a few posters */} 
-                {images.posters.length > 0 && (
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-300 mb-2">Posters</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                      {images.posters.slice(0, 10).map((img, index) => (
-                        <div key={`${img.file_path}-${index}`} className="aspect-[2/3] relative bg-[#1a1a1a] rounded-lg overflow-hidden">
-                          <Image
-                            src={getImageUrl(img.file_path, 'w342')}
-                            alt="Poster image"
-                            fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                            className="object-cover"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                 {/* TODO: Link to a full image gallery page or modal */} 
-              </div>
-            )}
-
-            {/* Production Companies */}
-            {media.production_companies.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-xl font-semibold text-[#FF6B6B] mb-4">Production Companies</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {media.production_companies.slice(0, 6).map((company, index) => (
-                    <div key={`${company.id}-${index}`} className="bg-[#1a1a1a] p-4 rounded-lg text-center">
-                      {company.logo_path ? (
-                        <div className="h-12 relative mb-2">
-                          <Image
-                            src={getImageUrl(company.logo_path, 'w200')}
-                            alt={company.name}
-                            fill
-                            sizes="200px"
-                            className="object-contain"
-                          />
-                        </div>
-                      ) : (
-                        <div className="h-12 flex items-center justify-center mb-2">
-                          <span className="text-gray-500 text-xs">No Logo</span>
-                        </div>
-                      )}
-                      <p className="text-sm text-gray-300">{company.name}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Media Gallery - Images and Production Companies */}
+            <Gallery images={images} productionCompanies={media.production_companies} />
 
             {/* TV Show Specific Info */}
             {!isMovie && tvData.created_by.length > 0 && (
@@ -711,59 +623,7 @@ function TitleContent() {
       </div>
 
       {/* Recommendations and Similar Titles (Full Width Below Main Grid) */}
-      {(recommendations.length > 0 || similarTitles.length > 0) && (
-        <div className="max-w-6xl mx-auto px-8 py-8">
-          {recommendations.length > 0 && (
-            <div className="mb-12">
-              <h2 className="text-2xl font-semibold text-[#FF6B6B] mb-5">Recommendations</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {recommendations.map((rec, index) => (
-                  <a href={`/title?id=${rec.id}&type=${rec.media_type}`} key={`${rec.id}-${index}`} className="block bg-[#1a1a1a] rounded-lg overflow-hidden group">
-                    <div className="aspect-[2/3] relative">
-                      <Image 
-                        src={getImageUrl(rec.poster_path, 'w342')} 
-                        alt={getTitle(rec)}
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="p-3">
-                      <h3 className="text-sm font-semibold truncate group-hover:text-[#FF6B6B]">{getTitle(rec)}</h3>
-                      <p className="text-xs text-gray-400">{getYear(rec)}</p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {similarTitles.length > 0 && (
-            <div>
-              <h2 className="text-2xl font-semibold text-[#FF6B6B] mb-5">Similar Titles</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {similarTitles.map((sim, index) => (
-                  <a href={`/title?id=${sim.id}&type=${sim.media_type}`} key={`${sim.id}-${index}`} className="block bg-[#1a1a1a] rounded-lg overflow-hidden group">
-                    <div className="aspect-[2/3] relative">
-                      <Image 
-                        src={getImageUrl(sim.poster_path, 'w342')}
-                        alt={getTitle(sim)}
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="p-3">
-                      <h3 className="text-sm font-semibold truncate group-hover:text-[#FF6B6B]">{getTitle(sim)}</h3>
-                      <p className="text-xs text-gray-400">{getYear(sim)}</p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <RelatedContent recommendations={recommendations} similarTitles={similarTitles} />
     </div>
   );
 }
