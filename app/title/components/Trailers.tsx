@@ -16,13 +16,9 @@ export default function Trailers({ videos }: TrailersProps) {
   const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  if (!videos || videos.length === 0) {
-    return null;
-  }
-
   const performScroll = useCallback(() => {
     const container = scrollContainerRef.current;
-    if (!container || !container.children.length || videos.length === 0) return;
+    if (!container || !container.children.length || !videos || videos.length === 0) return;
 
     const items = Array.from(container.children) as HTMLElement[];
     if (activeIndex < 0 || activeIndex >= items.length) return; // Safety check
@@ -52,18 +48,18 @@ export default function Trailers({ videos }: TrailersProps) {
     if (Math.abs(container.scrollLeft - finalScrollLeft) > 1) { // Only scroll if significantly different
         container.scrollTo({ left: finalScrollLeft, behavior: 'smooth' });
     }
-  }, [activeIndex, videos]); // videos dependency for length and potential offsetWidth changes
+  }, [activeIndex, videos]);
 
-  // Effect for updating scroll position when activeIndex or videos change
   useEffect(() => {
+    if (!videos || videos.length === 0) return;
     const timer = setTimeout(() => {
       performScroll();
-    }, 50); // Short delay for DOM to settle
+    }, 50);
     return () => clearTimeout(timer);
   }, [activeIndex, videos, performScroll]);
 
-  // Effect for managing arrow states and resize handling
   useEffect(() => {
+    if (!videos || videos.length === 0) return;
     const container = scrollContainerRef.current;
     if (!container) return;
 
@@ -81,10 +77,10 @@ export default function Trailers({ videos }: TrailersProps) {
         setCanScrollLeft(false);
         setCanScrollRight(false);
       }
-      performScroll(); // Recalculate scroll on resize or videos change
+      performScroll();
     };
 
-    const initTimer = setTimeout(updateStates, 100); // Initial state update after layout
+    const initTimer = setTimeout(updateStates, 100);
     window.addEventListener('resize', updateStates);
 
     return () => {
@@ -92,6 +88,10 @@ export default function Trailers({ videos }: TrailersProps) {
       window.removeEventListener('resize', updateStates);
     };
   }, [activeIndex, videos, performScroll]);
+
+  if (!videos || videos.length === 0) {
+    return null;
+  }
 
   const handleNavigation = (direction: 'left' | 'right') => {
     setActiveIndex(prev => {
