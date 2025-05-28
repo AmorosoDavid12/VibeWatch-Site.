@@ -27,7 +27,7 @@ const DeleteAccountPage = () => {
           </div>
           
           <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
-            <p className="mb-4">We\'re committed to your privacy. This page allows you to request the deletion of your {appName} account and associated data.</p>
+            <p className="mb-4">We&apos;re committed to your privacy. This page allows you to request the deletion of your {appName} account and associated data.</p>
 
             <h2 className="text-xl font-semibold mt-6 mb-3 text-gray-900 dark:text-white">What Happens When You Delete Your Account</h2>
             <p className="mb-2">Deleting your account will:</p>
@@ -35,16 +35,16 @@ const DeleteAccountPage = () => {
               <li>Remove your personal information (e.g., name, email).</li>
               <li>Erase your activity history and preferences.</li>
               <li>Delete any uploaded content (e.g., images, posts).</li>
-              <li>Revoke access to the app\'s features.</li>
+              <li>Revoke access to the app&apos;s features.</li>
             </ul>
             <p className="mb-4"><em>Note: Some data may be retained for legal or security reasons, as detailed in our Privacy Policy.</em></p>
 
             <h2 className="text-xl font-semibold mt-6 mb-3 text-gray-900 dark:text-white">How to Request Account Deletion</h2>
             <p className="mb-2">To delete your account:</p>
             <ol className="list-decimal pl-6 mb-4">
-              <li>Email us at <a href="mailto:system@vibewatch.app" className="text-netflix-red hover:underline">system@vibewatch.app</a> with the subject line "Account Deletion Request."</li>
+              <li>Email us at <a href="mailto:system@vibewatch.app" className="text-netflix-red hover:underline">system@vibewatch.app</a> with the subject line &quot;Account Deletion Request.&quot;</li>
               <li>Include your registered email address and username in the message.</li>
-              <li>We\'ll process your request within 7 days and confirm via email.</li>
+              <li>We&apos;ll process your request within 7 days and confirm via email.</li>
             </ol>
             <p className="mb-2">Alternatively, if your app supports in-app deletion:</p>
             <ul className="list-disc pl-6 mb-4">

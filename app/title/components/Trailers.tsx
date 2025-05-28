@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { TMDBVideo } from '../../utils/tmdb-api';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
@@ -12,14 +11,14 @@ const PEEK_AMOUNT_PX = 60; // How much of the adjacent card to show
 const SPACE_BETWEEN_ITEMS_PX = 24; // Corresponds to space-x-6 in Tailwind
 
 export default function Trailers({ videos }: TrailersProps) {
-  if (!videos || videos.length === 0) {
-    return null;
-  }
-
   const [activeIndex, setActiveIndex] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  if (!videos || videos.length === 0) {
+    return null;
+  }
 
   const performScroll = useCallback(() => {
     const container = scrollContainerRef.current;
