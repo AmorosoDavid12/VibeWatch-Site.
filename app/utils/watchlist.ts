@@ -167,7 +167,7 @@ export const getWatchlist = async (userId: string) => {
 };
 
 // Function to get a specific watched item for a user
-export const getWatchedItem = async (userId: string, mediaId: number, mediaType: string): Promise<any | null> => {
+export const getWatchedItem = async (userId: string, mediaId: number): Promise<unknown | null> => {
   if (!userId) return null;
 
   try {
@@ -209,8 +209,12 @@ export const addToWatchedList = async (
     return false;
   }
 
-  // Explicitly type media as any to handle union type properties, or define a more inclusive type
-  const mediaDetail = media as any;
+  // Type assertion to handle additional properties that may be present
+  const mediaDetail = media as TMDBMedia & {
+    genres?: { id: number; name: string }[];
+    genre_ids?: number[];
+    credits?: { cast?: unknown[]; crew?: unknown[] };
+  };
 
   // Normalize the media object and add user_rating
   const normalizedMedia = {
