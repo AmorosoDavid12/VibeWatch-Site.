@@ -1,0 +1,85 @@
+1. Structure of a Watchlist Element
+A watchlist element (item) in your code is typically an object with the following properties (as seen in the handleAddToWatchlist, saveOrderToSupabase, and other functions):
+Apply to WatchlistScr...
+Not all fields are always present, but these are the main ones used throughout the file.
+{
+  id: item.id,
+  title: item.title || item.name || 'Untitled',
+  media_type: item.media_type || (item.first_air_date ? 'tv' : 'movie'),
+  poster_path: item.poster_path,
+  release_date: item.release_date || item.first_air_date,
+  vote_average: item.vote_average || 0,
+  genre_ids: item.genre_ids || [],
+  // Optionally, these may also be present:
+  genres: item.genres || [],
+  overview: item.overview || '',
+  cast: item.cast || [],
+  crew: item.crew || [],
+  position: index, // (for ordering)
+  isPinned: boolean, // (if pinned)
+  saved_at: timestamp // (when saved)
+}
+2. Function for Deleting a Watchlist Item
+The main function for deleting a watchlist item is handleRemoveItem. Here is the relevant part of the code:
+  const handleRemoveItem = (id, title) => {
+    // Add haptic feedback when initiating remove
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    Alert.alert(
+      'Remove from Watchlist',
+      `Are you sure you want to remove "${title}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            // Add confirmation haptic feedback
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            
+            if (isLocalEditMode) {
+              // If in local edit mode, update local state and track deletion
+              setWatchlistItems(prev => prev.filter(item => item.id !== id));
+              // Track this item as deleted locally
+              setLocallyDeletedItems(prev => [...prev, id]);
+              console.log(`Item ${id} (${title}) marked for deletion`);
+            } else {
+              try {
+                // Update UI immediately first
+                useWatchlistStore.setState(state => ({
+                  items: state.items.filter(item => item.id !== id)
+                }));
+                
+                // Show toast for immediate feedback
+                showToast(`"${title}" removed from watchlist`);
+                
+                // Then perform the actual database operation
+                await removeFromWatchlist(id);
+                
+                // Force refresh the list if there are no items left
+                if (watchlistItems.length === 1) {
+                  // This was the last item, manually set empty state
+                  setWatchlistItems([]);
+                  // Force a refresh from server to ensure proper UI state
+                  setTimeout(() => {
+                    syncWithServer();
+                  }, 500);
+                }
+              } catch (error) {
+                console.error('Error removing item:', error);
+                showToast('Failed to remove item. Please try again.');
+              }
+            }
+          },
+        },
+      ]
+    );
+  };
+  
+If in local edit mode, it only updates local state and tracks the deletion.
+Otherwise, it updates the store and calls removeFromWatchlist(id) (which is imported from your store).
+The actual deletion from the backend is handled by the removeFromWatchlist function from your store.
+Summary:
+Watchlist item structure: See the object above.
+Delete function: handleRemoveItem (calls removeFromWatchlist for backend removal).
+If you want to see the actual implementation of removeFromWatchlist, let me know and I can show you that from your store file!
