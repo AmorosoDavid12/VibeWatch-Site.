@@ -182,7 +182,7 @@ function TitleContent() {
           const watchedItem = await getWatchedItem(user.id, mediaData.id);
           if (watchedItem) {
             setIsWatched(true);
-            setCurrentUserRating(watchedItem.user_rating);
+            setCurrentUserRating((watchedItem as { user_rating?: number }).user_rating);
           }
         }
       } catch (error) {
