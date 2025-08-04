@@ -179,7 +179,7 @@ function TitleContent() {
           setInWatchlist(isInWatchlist);
 
           // Check if the item is in the watched list
-          const watchedItem = await getWatchedItem(user.id, mediaData.id, type);
+          const watchedItem = await getWatchedItem(user.id, mediaData.id);
           if (watchedItem) {
             setIsWatched(true);
             setCurrentUserRating(watchedItem.user_rating);
