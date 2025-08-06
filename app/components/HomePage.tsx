@@ -27,6 +27,7 @@ export default function Home() {
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const carouselIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const carouselInterval = 11000; // 11 seconds between slides
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   const handleScroll = useCallback((ref: React.RefObject<HTMLDivElement | null>, setShowL: Dispatch<SetStateAction<boolean>>, setShowR: Dispatch<SetStateAction<boolean>>) => {
     if (ref.current) {
@@ -120,6 +121,7 @@ export default function Home() {
     
     if (!isLoading && trendingMedia.length > 0) {
       carouselIntervalRef.current = setInterval(() => {
+        setImageLoaded(false); // Reset image loading state for auto-transition
         setCurrentCarouselIndex((prevIndex) => (prevIndex + 1) % trendingMedia.length); // Remove Math.min(trendingMedia.length, 6)
       }, carouselInterval);
       
@@ -139,6 +141,9 @@ export default function Home() {
       carouselIntervalRef.current = null;
     }
     
+    // Reset image loading state for new slide
+    setImageLoaded(false);
+    
     setCurrentCarouselIndex((prevIndex) => 
       prevIndex === 0 ? trendingMedia.length - 1 : prevIndex - 1 // Remove Math.min(trendingMedia.length, 6)
     );
@@ -155,6 +160,9 @@ export default function Home() {
       clearInterval(carouselIntervalRef.current);
       carouselIntervalRef.current = null;
     }
+    
+    // Reset image loading state for new slide
+    setImageLoaded(false);
     
     setCurrentCarouselIndex((prevIndex) => 
       (prevIndex + 1) % trendingMedia.length // Remove Math.min(trendingMedia.length, 6)
@@ -224,6 +232,7 @@ export default function Home() {
                   priority
                   className="object-cover"
                   style={{ objectPosition: 'center 20%' }}
+                  onLoad={() => setImageLoaded(true)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
               </div>
@@ -233,21 +242,36 @@ export default function Home() {
                 </Link>
               )}
               <div className="absolute left-5 bottom-5 max-w-[600px] z-10">
-                <h1 className="text-3xl font-bold mb-2 text-shadow">{getTitle(currentMedia)}</h1>
-                <p className="text-lg mb-3 opacity-90 text-shadow line-clamp-2">
-                  {currentMedia?.overview?.substring(0, 120)}
-                  {currentMedia?.overview && currentMedia.overview.length > 120 ? '...' : ''}
-                </p>
-                <div className="flex items-center mb-3">
-                  <span className="flex items-center mr-4">
-                    <span className="text-yellow-400 mr-1">⭐</span> {currentMedia?.vote_average?.toFixed(1)} TMDB
-                  </span>
-                  <span>{getYear(currentMedia)} • {currentMedia?.media_type}</span>
-                </div>
-                {currentMedia && (
-                  <Link href={`/title?id=${currentMedia.id}&type=${currentMedia.media_type}`} className="bg-white/20 border-none text-white py-2 px-4 rounded flex items-center transition-colors hover:bg-white/30 w-fit">
-                    ▶ <span className="ml-2">View Details</span>
-                  </Link>
+                {imageLoaded ? (
+                  <>
+                    <h1 className="text-3xl font-bold mb-2 text-shadow">{getTitle(currentMedia)}</h1>
+                    <p className="text-lg mb-3 opacity-90 text-shadow line-clamp-2">
+                      {currentMedia?.overview?.substring(0, 120)}
+                      {currentMedia?.overview && currentMedia.overview.length > 120 ? '...' : ''}
+                    </p>
+                    <div className="flex items-center mb-3">
+                      <span className="flex items-center mr-4">
+                        <span className="text-yellow-400 mr-1">⭐</span> {currentMedia?.vote_average?.toFixed(1)} TMDB
+                      </span>
+                      <span>{getYear(currentMedia)} • {currentMedia?.media_type}</span>
+                    </div>
+                    {currentMedia && (
+                      <Link href={`/title?id=${currentMedia.id}&type=${currentMedia.media_type}`} className="bg-white/20 border-none text-white py-2 px-4 rounded flex items-center transition-colors hover:bg-white/30 w-fit">
+                        ▶ <span className="ml-2">View Details</span>
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Loading placeholder for text content */}
+                    <div className="animate-pulse">
+                      <div className="h-8 bg-gray-600 rounded mb-2 w-3/4"></div>
+                      <div className="h-5 bg-gray-600 rounded mb-1 w-full"></div>
+                      <div className="h-5 bg-gray-600 rounded mb-3 w-5/6"></div>
+                      <div className="h-6 bg-gray-600 rounded mb-3 w-1/2"></div>
+                      <div className="h-10 bg-gray-600 rounded w-32"></div>
+                    </div>
+                  </>
                 )}
               </div>
             </>
