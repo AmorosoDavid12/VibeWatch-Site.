@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import Header from '../components/Header';
 import Link from 'next/link';
@@ -25,7 +23,7 @@ export default function PrivacyPolicy() {
           </div>
           
           <div className="prose dark:prose-invert max-w-none">
-            <p className="text-sm text-gray-500 mb-4">Last Updated: {new Date().toLocaleDateString()}</p>
+            <p className="text-sm text-gray-500 mb-4">Last Updated: 8/6/2025</p>
             
             <p className="mb-4">
               Thank you for using our app. This Privacy Policy explains how we collect, use, and share your information when you use our application.
