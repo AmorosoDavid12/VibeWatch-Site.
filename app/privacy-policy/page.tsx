@@ -131,7 +131,7 @@ export default function PrivacyPolicy() {
             <h2 className="text-xl font-semibold mt-6 mb-3">Contact Us</h2>
 
             <p className="mb-4">
-              If you have any questions about this Privacy Policy, please contact us at system@vibewatchapp.com.
+              If you have any questions about this Privacy Policy, please contact us at support@vibewatch.app.
             </p>
           </div>
         </div>

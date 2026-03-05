@@ -42,7 +42,7 @@ const DeleteAccountPage = () => {
             <h2 className="text-xl font-semibold mt-6 mb-3 text-gray-900 dark:text-white">How to Request Account Deletion</h2>
             <p className="mb-2">To delete your account:</p>
             <ol className="list-decimal pl-6 mb-4">
-              <li>Email us at <a href="mailto:system@vibewatch.app" className="text-netflix-red hover:underline">system@vibewatch.app</a> with the subject line &quot;Account Deletion Request.&quot;</li>
+              <li>Email us at <a href="mailto:support@vibewatch.app" className="text-netflix-red hover:underline">support@vibewatch.app</a> with the subject line &quot;Account Deletion Request.&quot;</li>
               <li>Include your registered email address and username in the message.</li>
               <li>We&apos;ll process your request within 7 days and confirm via email.</li>
             </ol>
@@ -60,7 +60,7 @@ const DeleteAccountPage = () => {
             </ul>
 
             <h2 className="text-xl font-semibold mt-6 mb-3 text-gray-900 dark:text-white">Contact Us</h2>
-            <p className="mb-4">For questions or concerns, contact our support team at <a href="mailto:system@vibewatch.app" className="text-netflix-red hover:underline">system@vibewatch.app</a>.</p>
+            <p className="mb-4">For questions or concerns, contact our support team at <a href="mailto:support@vibewatch.app" className="text-netflix-red hover:underline">support@vibewatch.app</a>.</p>
           </div>
         </div>
       </div>
