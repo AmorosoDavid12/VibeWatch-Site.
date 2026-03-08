@@ -1,40 +1,142 @@
 @import "tailwindcss";
 
+/* ===== DESIGN SYSTEM TOKENS ===== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  
-  /* VibeWatch Color Scheme */
-  --netflix-red: #E50914;
-  --indigo: #6366f1;
-  --purple: #8E44AD;
-  --purple-alt: rgb(140, 82, 255);
-  
-  /* Tab Navigation Colors */
-  --tab-watchlist: #E50914;
-  --tab-watchlist-alt: rgb(255, 107, 107);
-  --tab-search: rgb(52, 152, 219);
-  --tab-watched: rgb(140, 82, 255);
+  /* Backgrounds (surface hierarchy) */
+  --bg-base: #060608;
+  --bg-surface: #0c0c10;
+  --bg-elevated: #14141a;
+  --bg-overlay: #1a1a22;
+  --bg-input: #10101a;
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-hover: rgba(255, 255, 255, 0.16);
+  --border-focus: rgba(229, 9, 20, 0.5);
+
+  /* Text */
+  --text-primary: #f0f0f0;
+  --text-secondary: #a0a0a8;
+  --text-tertiary: #606068;
+  --text-inverse: #060608;
+
+  /* Brand */
+  --accent: #E50914;
+  --accent-hover: #ff1a25;
+  --accent-muted: rgba(229, 9, 20, 0.15);
+
+  /* Feature Colors */
+  --color-watchlist: #E50914;
+  --color-search: #3498db;
+  --color-watched: #8c52ff;
+  --color-friends: #2ecc71;
+  --color-reminders: #f39c12;
+
+  /* Semantic */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 12px;
 }
 
+/* ===== TAILWIND v4 THEME ===== */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Font */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Surface colors */
+  --color-base: var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-elevated: var(--bg-elevated);
+  --color-overlay: var(--bg-overlay);
+  --color-input: var(--bg-input);
+
+  /* Text colors */
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
+  --color-inverse: var(--text-inverse);
+
+  /* Brand */
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-muted: var(--accent-muted);
+
+  /* Feature colors */
+  --color-watchlist: var(--color-watchlist);
+  --color-search: var(--color-search);
+  --color-watched: var(--color-watched);
+  --color-friends: var(--color-friends);
+  --color-reminders: var(--color-reminders);
+
+  /* Semantic */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+
+  /* Glass */
+  --color-glass: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+
+  /* Border colors */
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-hover: var(--border-hover);
+  --color-border-focus: var(--border-focus);
+
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(229, 9, 20, 0.3);
+
+  /* Animation durations */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --duration-slower: 600ms;
+
+  /* Easings */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Keyframe animations */
+  --animate-shimmer: shimmer 1.5s infinite;
+  --animate-fade-in: fadeIn 250ms var(--ease-out);
+  --animate-scale-in: scaleIn 400ms var(--ease-out);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ===== KEYFRAMES ===== */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes fade-in-out {
@@ -44,6 +146,22 @@ body {
   100% { opacity: 0; transform: translateY(20px); }
 }
 
+/* ===== BASE STYLES ===== */
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+/* ===== UTILITY CLASSES ===== */
 .animate-fade-in-out {
   animation: fade-in-out 2.5s both;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
