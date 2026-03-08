@@ -3,6 +3,7 @@ import { AdminLoginForm } from './login-form';
 
 export const metadata = {
   title: 'Admin — VibeWatch',
+  robots: { index: false, follow: false },
 };
 
 export default async function AdminLayout({

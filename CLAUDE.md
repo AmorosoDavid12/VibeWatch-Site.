@@ -52,6 +52,7 @@ npm run lint     # ESLint
 | `Header` | `app/components/Header.tsx` | Site navigation header |
 | `HomePage` | `app/components/HomePage.tsx` | Landing page content |
 | `AuthBrandPanel` | `app/components/AuthBrandPanel.tsx` | Left-side brand panel for auth pages |
+| `SmartAppBanner` | `app/components/SmartAppBanner.tsx` | Android "Open in App" banner (global, rendered in layout.tsx) |
 | `ui/` | `app/components/ui/` | Base UI components (planned, currently empty) |
 
 ## API Routes

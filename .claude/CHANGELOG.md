@@ -1,5 +1,30 @@
 # VibeWatch Website Changelog
 
+## Android App Bridge & Smart App Banner (Mar 8, 2026)
+
+### Smart App Banner (`SmartAppBanner.tsx`)
+- Added global banner for Android users: app icon, "Better on the app" text, and "Open" button
+- Rendered in root `layout.tsx`, appears on every page except `/reset-password`
+- Uses Android `intent://` URI: opens app if installed, falls back to Play Store (`com.vibewatch.app`)
+- Dismissible per session via `sessionStorage`
+- Hidden in WebViews (detects `wv|WebView` in user agent)
+
+### Android Deep Link Bridge on Auth Pages
+- `/auth/callback` — Detects Android, shows "Open in VibeWatch App" button after email verification or password recovery instead of auto-redirecting
+- `/signin` — Shows "Open in VibeWatch App" button when Android user lands after email verification (`?verified=true`)
+- Deep links: `vibewatch://login` (verification), `vibewatch://reset-password` (recovery)
+- Both pages include "Continue on web instead" fallback
+
+### Supabase Config Change
+- Site URL changed from `vibewatch://` to `https://vibewatch.app`
+- Added `vibewatch://**`, `exp://192.168.1.128:8081/**`, `https://vibewatch.app/auth/callback` to redirect URLs
+- Email verification and password recovery links now redirect to the website; the website bridges mobile users back to the app
+
+**Files created:** `app/components/SmartAppBanner.tsx`
+**Files modified:** `app/layout.tsx`, `app/auth/callback/page.tsx`, `app/signin/page.tsx`
+
+---
+
 ## Auth Flow Bug Fixes (Mar 8, 2026)
 
 ### Password Recovery Redirect (#12)

@@ -35,6 +35,7 @@ app/
 │   ├── AuthBrandPanel.tsx  # Brand panel for auth pages (split layout left side)
 │   ├── Header.tsx          # Site navigation header
 │   ├── HomePage.tsx        # Landing page content (carousel, trending, celebs)
+│   ├── SmartAppBanner.tsx  # Android "Open in App" banner (global, in layout.tsx)
 │   └── ui/                 # Base UI components (planned, currently empty)
 ├── delete-account/         # Account deletion page
 ├── forgot-password/        # Password reset request (with resend cooldown)
@@ -70,11 +71,13 @@ Full design system spec: `.claude/skills/design-system/SKILL.md`
 
 - **Email/password:** `AuthProvider` wraps the app, exposes `signIn`, `signUp`, `signOut`
 - **Google OAuth:** `signInWithGoogle()` triggers Supabase OAuth redirect
-- **Email verification:** Supabase emails link → `/auth/callback` exchanges code → signs user out → shows "Email verified!" with countdown → redirects to `/signin`
-- **Password recovery:** Email link → `/auth/callback` detects `type=recovery` → redirects to `/reset-password`. Fallback: `AuthProvider` listens for `PASSWORD_RECOVERY` event.
+- **Email verification:** Supabase emails link → user lands on `vibewatch.app` → auth provider verifies → redirects to `/signin?verified=true`. On Android, shows "Open in VibeWatch App" button to deep link back to the mobile app.
+- **Password recovery:** Email link → user lands on `vibewatch.app` → `/auth/callback` detects `type=recovery` → redirects to `/reset-password`. On Android, offers to open the app instead. Fallback: `AuthProvider` listens for `PASSWORD_RECOVERY` event.
 - **Hash capture:** `supabase.ts` exports `pendingAuthType` — captures the `type` param from the URL hash before `createClient()` clears it (needed for recovery/signup detection)
+- **Smart App Banner:** `SmartAppBanner.tsx` in root layout — shows "Open in App" banner for Android users on all pages except `/reset-password`. Uses `intent://` URI (app if installed, Play Store if not). Dismissible per session.
 - **Supabase project:** `gihofdmqjwgkotwxdxms.supabase.co`
+- **Supabase Site URL:** `https://vibewatch.app` (email links redirect here, not to `vibewatch://`)
 
 ## Deployment
 
-Push to `main` branch to auto-deploy.
+Push to `master` branch to auto-deploy.

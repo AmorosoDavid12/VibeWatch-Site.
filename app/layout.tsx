@@ -11,10 +11,31 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "VibeWatch",
-  description: "Track and discover your favorite content",
+  title: {
+    default: 'VibeWatch — Track Your Entertainment Vibe',
+    template: '%s | VibeWatch',
+  },
+  description: 'Track movies and TV shows, build your watchlist, rate what you\'ve watched, and discover new content with VibeWatch.',
+  metadataBase: new URL('https://vibewatch.app'),
   icons: {
     icon: '/favicon.ico',
+  },
+  openGraph: {
+    title: 'VibeWatch — Track Your Entertainment Vibe',
+    description: 'Track movies and TV shows, build your watchlist, rate what you\'ve watched, and discover new content.',
+    url: 'https://vibewatch.app',
+    siteName: 'VibeWatch',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'VibeWatch — Track Your Entertainment Vibe',
+    description: 'Track movies and TV shows, build your watchlist, rate what you\'ve watched, and discover new content.',
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
