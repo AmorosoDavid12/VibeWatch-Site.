@@ -59,6 +59,12 @@ function CallbackContent() {
           return;
         }
 
+        // Password recovery — redirect to reset page
+        if (type === 'recovery') {
+          router.push('/reset-password');
+          return;
+        }
+
         // OAuth login — redirect immediately
         router.push('/');
         return;
