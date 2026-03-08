@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 
-const PLAY_STORE_URL = 'market://details?id=com.vibewatch.app';
-const DEEP_LINK = 'vibewatch://';
 const DISMISS_KEY = 'vibewatch-app-banner-dismissed';
 
 const HIDDEN_PATHS = ['/reset-password'];
@@ -28,13 +26,10 @@ export default function SmartAppBanner() {
   if (!visible || HIDDEN_PATHS.includes(pathname)) return null;
 
   const handleOpen = () => {
-    // Try deep link first, fall back to Play Store after a delay
-    const fallbackTimer = setTimeout(() => {
-      window.location.href = PLAY_STORE_URL;
-    }, 800);
-
-    window.addEventListener('blur', () => clearTimeout(fallbackTimer), { once: true });
-    window.location.href = DEEP_LINK;
+    // Use Android intent URI — handles both cases in one URL:
+    // If app is installed: opens the app
+    // If not installed: opens Play Store listing
+    window.location.href = 'intent://home#Intent;scheme=vibewatch;package=com.vibewatch.app;end';
   };
 
   const handleDismiss = () => {
