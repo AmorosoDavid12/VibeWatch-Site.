@@ -35,12 +35,17 @@ function CallbackContent() {
     const handleCallback = async () => {
       const type = searchParams.get('type');
       const code = searchParams.get('code');
+      const allParams = Object.fromEntries(searchParams.entries());
+      console.log('[callback] params:', allParams);
+      console.log('[callback] hash:', window.location.hash);
 
       // Code exchange (OAuth or email verification via PKCE)
       if (code) {
         const isEmailVerification = type === 'signup' || type === 'email';
+        console.log('[callback] code exchange start', { type, isEmailVerification });
 
         const { error } = await supabase.auth.exchangeCodeForSession(code);
+        console.log('[callback] code exchange result', { error: error?.message || null });
 
         if (isEmailVerification) {
           await supabase.auth.signOut();
@@ -61,17 +66,20 @@ function CallbackContent() {
 
         // Password recovery — redirect to reset page
         if (type === 'recovery') {
+          console.log('[callback] recovery detected, redirecting to /reset-password');
           router.push('/reset-password');
           return;
         }
 
         // OAuth login — redirect immediately
+        console.log('[callback] OAuth login, redirecting to /');
         router.push('/');
         return;
       }
 
-      // Password recovery — redirect to reset page
+      // Password recovery — redirect to reset page (fallback: no code param)
       if (type === 'recovery') {
+        console.log('[callback] recovery (no code), redirecting to /reset-password');
         setTimeout(() => router.push('/reset-password'), 500);
         return;
       }
