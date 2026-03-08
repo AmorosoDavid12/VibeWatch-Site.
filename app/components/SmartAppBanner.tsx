@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.vibewatch.app';
+const PLAY_STORE_URL = 'market://details?id=com.vibewatch.app';
 const DEEP_LINK = 'vibewatch://';
 const DISMISS_KEY = 'vibewatch-app-banner-dismissed';
 
