@@ -7,7 +7,7 @@
 - **Styling:** Tailwind CSS 4
 - **Auth/DB:** Supabase
 - **Font:** Inter (Google Fonts)
-- **Deploy:** Push to `main` branch (auto-deploys)
+- **Deploy:** Push to `master` branch (auto-deploys)
 
 ## Related Projects
 
@@ -24,6 +24,8 @@ npm run dev      # Local dev server
 npm run build    # Production build
 npm run lint     # ESLint
 ```
+
+> **Do NOT run `npm run build` automatically.** The user will build and test manually.
 
 ## Key Pages
 

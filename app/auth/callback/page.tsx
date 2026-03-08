@@ -7,6 +7,11 @@ import { Suspense } from 'react';
 
 type CallbackState = 'loading' | 'verified' | 'error';
 
+function isAndroid(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /android/i.test(navigator.userAgent);
+}
+
 function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -14,12 +19,21 @@ function CallbackContent() {
   const [message, setMessage] = useState('Verifying...');
   const [countdown, setCountdown] = useState(3);
   const [redirectTo, setRedirectTo] = useState('/');
+  const [showOpenApp, setShowOpenApp] = useState(false);
+  const [authType, setAuthType] = useState<string | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const redirectWithCountdown = useCallback((to: string, seconds: number) => {
     setState('verified');
     setRedirectTo(to);
     setCountdown(seconds);
+
+    // On Android, don't auto-redirect — show "Open in App" instead
+    if (isAndroid()) {
+      setShowOpenApp(true);
+      return;
+    }
+
     let remaining = seconds;
     countdownRef.current = setInterval(() => {
       remaining -= 1;
@@ -31,10 +45,15 @@ function CallbackContent() {
     }, 1000);
   }, [router]);
 
+  const openInApp = useCallback((deepLink: string) => {
+    window.location.href = deepLink;
+  }, []);
+
   useEffect(() => {
     const handleCallback = async () => {
       const type = searchParams.get('type');
       const code = searchParams.get('code');
+      setAuthType(type);
 
       // Code exchange (OAuth or email verification via PKCE)
       if (code) {
@@ -61,20 +80,30 @@ function CallbackContent() {
 
         // Password recovery — redirect to reset page
         if (type === 'recovery') {
-          console.log('[callback] recovery detected, redirecting to /reset-password');
+          // On Android, offer to open the app instead
+          if (isAndroid()) {
+            setState('verified');
+            setMessage('Password reset ready.');
+            setShowOpenApp(true);
+            return;
+          }
           router.push('/reset-password');
           return;
         }
 
         // OAuth login — redirect immediately
-        console.log('[callback] OAuth login, redirecting to /');
         router.push('/');
         return;
       }
 
       // Password recovery — redirect to reset page (fallback: no code param)
       if (type === 'recovery') {
-        console.log('[callback] recovery (no code), redirecting to /reset-password');
+        if (isAndroid()) {
+          setState('verified');
+          setMessage('Password reset ready.');
+          setShowOpenApp(true);
+          return;
+        }
         setTimeout(() => router.push('/reset-password'), 500);
         return;
       }
@@ -109,6 +138,10 @@ function CallbackContent() {
   }, [router, searchParams, redirectWithCountdown]);
 
   if (state === 'verified') {
+    const appDeepLink = authType === 'recovery'
+      ? 'vibewatch://reset-password'
+      : 'vibewatch://login';
+
     return (
       <div className="flex min-h-screen bg-base items-center justify-center">
         <div className="text-center">
@@ -118,16 +151,43 @@ function CallbackContent() {
             </svg>
           </div>
           <h2 className="text-primary text-lg font-semibold mb-1">{message}</h2>
-          <p className="text-tertiary text-sm mb-6">Redirecting in {countdown}s</p>
-          <button
-            onClick={() => {
-              if (countdownRef.current) clearInterval(countdownRef.current);
-              router.push(redirectTo);
-            }}
-            className="text-sm text-accent hover:underline cursor-pointer"
-          >
-            Continue now
-          </button>
+
+          {showOpenApp ? (
+            <div className="mt-4 space-y-3">
+              <button
+                onClick={() => openInApp(appDeepLink)}
+                className="w-full rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-white cursor-pointer hover:bg-accent/90 transition-colors"
+              >
+                Open in VibeWatch App
+              </button>
+              <button
+                onClick={() => {
+                  setShowOpenApp(false);
+                  if (authType === 'recovery') {
+                    router.push('/reset-password');
+                  } else {
+                    router.push('/signin');
+                  }
+                }}
+                className="text-sm text-tertiary hover:text-secondary cursor-pointer transition-colors"
+              >
+                Continue on web instead
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-tertiary text-sm mb-6">Redirecting in {countdown}s</p>
+              <button
+                onClick={() => {
+                  if (countdownRef.current) clearInterval(countdownRef.current);
+                  router.push(redirectTo);
+                }}
+                className="text-sm text-accent hover:underline cursor-pointer"
+              >
+                Continue now
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
