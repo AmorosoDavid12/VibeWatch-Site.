@@ -104,10 +104,15 @@ function SignInContent() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
 
   const usernameTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
   const { signIn, signUp, signInWithGoogle, user } = useAuth();
+
+  useEffect(() => {
+    setIsAndroid(/android/i.test(navigator.userAgent));
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -247,6 +252,19 @@ function SignInContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>{successMessage}</span>
+            </div>
+          )}
+
+          {/* Android deep link bridge */}
+          {successMessage && searchParams.get('verified') === 'true' && isAndroid && (
+            <div className="mb-6 space-y-3">
+              <button
+                onClick={() => { window.location.href = 'vibewatch://login'; }}
+                className="w-full rounded-[var(--radius-md)] bg-accent hover:bg-accent-hover px-6 py-3 text-sm font-semibold text-white cursor-pointer transition-colors"
+              >
+                Open in VibeWatch App
+              </button>
+              <p className="text-center text-xs text-tertiary">Or sign in below to continue on web</p>
             </div>
           )}
 
