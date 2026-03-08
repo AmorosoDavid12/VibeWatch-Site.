@@ -31,13 +31,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        // Supabase ignores our redirectTo for recovery emails,
-        // so intercept PASSWORD_RECOVERY here and redirect to reset page
+      async (event, session) => {
+        // Supabase ignores our redirectTo for verification/recovery emails
+        // and always redirects to the Site URL. Detect the type from the
+        // URL hash and handle accordingly.
         if (event === 'PASSWORD_RECOVERY') {
           window.location.href = '/reset-password';
           return;
         }
+
+        if (event === 'SIGNED_IN') {
+          const hash = window.location.hash;
+          if (hash.includes('type=signup')) {
+            // Email verification — sign out and send to login
+            await supabase.auth.signOut();
+            window.location.href = '/signin?verified=true';
+            return;
+          }
+        }
+
         setSession(session);
         setUser(session?.user || null);
         setIsLoading(false);
