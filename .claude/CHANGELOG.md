@@ -1,8 +1,26 @@
 # VibeWatch Website Changelog
 
-## Documentation Audit (Mar 8, 2026)
+## Auth Flow Bug Fixes (Mar 8, 2026)
 
-### Docs Sync
+### Password Recovery Redirect (#12)
+- Fixed password recovery flow: `/auth/callback` now detects `type=recovery` and redirects to `/reset-password` after code exchange
+- Added `PASSWORD_RECOVERY` event interception in `AuthProvider` as a fallback redirect mechanism
+
+### Signup Verification Redirect (Bug #13)
+- Fixed email verification UX: after clicking verification link, user now sees "Email verified!" confirmation with 3-second countdown before redirect
+- Auth callback signs user out after email verification so they go through login intentionally
+- Added hash-fragment fallback path for non-PKCE email verification flows
+- Added 5-second timeout fallback if auth state change never fires
+
+### URL Hash Capture Fix
+- Fixed `supabase.ts` to capture URL hash parameters before `createClient()` clears them
+- Ensures auth type (recovery, signup) is preserved from the hash fragment for proper routing
+
+### Auth Provider Recovery Handling
+- Added `PASSWORD_RECOVERY` event listener in `AuthProvider` that redirects to `/reset-password`
+- Prevents recovery sessions from being treated as normal sign-ins
+
+### Documentation Audit
 - Audited and updated `CLAUDE.md`, `ARCHITECTURE.md`, and `CHANGELOG.md` to match actual codebase
 - Added API Routes and Utility Modules tables to `CLAUDE.md`
 - Added `/admin/feedback` page to Key Pages table
@@ -59,19 +77,28 @@
 
 ---
 
-## Recent Changes (Mar 2026)
+## Earlier Changes (Feb-Mar 2026)
 
-### Admin Feedback Dashboard
-Added admin feedback dashboard and updated contact emails.
+### Admin Feedback Dashboard (Mar 5)
+- Added admin feedback dashboard at `/admin/feedback` with viewer page
+- Added API routes: `/api/admin/auth`, `/api/admin/feedback`, `/api/admin/groups`
+- Updated contact emails
 
-### Privacy Policy Update
-Updated privacy policy with Google Sign-In disclosures.
+### Privacy Policy Update (Mar 3)
+- Updated privacy policy with Google Sign-In disclosures
 
-### Next.js Security Patch
-Updated Next.js 15.3.1 → 15.5.12 to patch CVE-2025-66478 RCE vulnerability.
+### Next.js Security Patch (Feb 26)
+- Updated Next.js 15.3.1 to 15.5.12 to patch CVE-2025-66478 RCE vulnerability
 
-### Privacy Policy SSR
-Made privacy policy page server-rendered for app store review bots.
+### Privacy Policy SSR (Feb 26)
+- Made privacy policy page server-rendered for app store review bots
+
+---
+
+## Initial Development (Aug 2025)
 
 ### Banner Title
-Added conditional loading for the banner title.
+- Added conditional loading for the banner title
+
+### Initial Commit
+- Next.js project setup with image configuration fix

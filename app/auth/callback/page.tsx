@@ -35,17 +35,12 @@ function CallbackContent() {
     const handleCallback = async () => {
       const type = searchParams.get('type');
       const code = searchParams.get('code');
-      const allParams = Object.fromEntries(searchParams.entries());
-      console.log('[callback] params:', allParams);
-      console.log('[callback] hash:', window.location.hash);
 
       // Code exchange (OAuth or email verification via PKCE)
       if (code) {
         const isEmailVerification = type === 'signup' || type === 'email';
-        console.log('[callback] code exchange start', { type, isEmailVerification });
 
         const { error } = await supabase.auth.exchangeCodeForSession(code);
-        console.log('[callback] code exchange result', { error: error?.message || null });
 
         if (isEmailVerification) {
           await supabase.auth.signOut();

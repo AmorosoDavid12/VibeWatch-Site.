@@ -64,8 +64,8 @@ npm run lint     # ESLint
 
 | Module | File | Purpose |
 |--------|------|---------|
-| `auth-provider` | `app/utils/auth-provider.tsx` | React Context (signIn, signUp, signInWithGoogle, signOut) |
-| `supabase` | `app/utils/supabase.ts` | Supabase client initialization |
+| `auth-provider` | `app/utils/auth-provider.tsx` | React Context (signIn, signUp, signInWithGoogle, signOut, PASSWORD_RECOVERY redirect) |
+| `supabase` | `app/utils/supabase.ts` | Supabase client init + `pendingAuthType` hash capture |
 | `tmdb-api` | `app/utils/tmdb-api.ts` | TMDB API functions |
 | `watchlist` | `app/utils/watchlist.ts` | Watchlist CRUD operations |
 
