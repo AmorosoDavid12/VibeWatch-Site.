@@ -32,20 +32,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        const hash = window.location.hash;
+        console.log('[AuthProvider] event:', event, 'hash type:', hash.match(/type=(\w+)/)?.[1] || 'none', 'has session:', !!session);
+
         // Supabase ignores our redirectTo for verification/recovery emails
         // and always redirects to the Site URL. Detect the type from the
         // URL hash and handle accordingly.
         if (event === 'PASSWORD_RECOVERY') {
+          console.log('[AuthProvider] PASSWORD_RECOVERY → /reset-password');
           window.location.href = '/reset-password';
           return;
         }
 
         if (event === 'SIGNED_IN') {
-          const hash = window.location.hash;
           if (hash.includes('type=signup')) {
-            // Email verification — sign out and send to login
+            console.log('[AuthProvider] signup verification → signing out → /signin');
             await supabase.auth.signOut();
             window.location.href = '/signin?verified=true';
+            return;
+          }
+          if (hash.includes('type=recovery')) {
+            console.log('[AuthProvider] recovery via hash → /reset-password');
+            window.location.href = '/reset-password';
             return;
           }
         }
