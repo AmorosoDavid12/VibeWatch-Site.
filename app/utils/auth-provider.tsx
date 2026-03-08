@@ -31,7 +31,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        // Supabase ignores our redirectTo for recovery emails,
+        // so intercept PASSWORD_RECOVERY here and redirect to reset page
+        if (event === 'PASSWORD_RECOVERY') {
+          window.location.href = '/reset-password';
+          return;
+        }
         setSession(session);
         setUser(session?.user || null);
         setIsLoading(false);
