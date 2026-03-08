@@ -2,14 +2,8 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from './supabase';
-
-// Capture auth type from URL hash BEFORE Supabase consumes it.
-// Supabase clears the hash at module load time, so this must run first.
-const _pendingAuthType = typeof window !== 'undefined'
-  ? new URLSearchParams(window.location.hash.substring(1)).get('type')
-  : null;
-console.log('[AuthProvider] captured pending auth type:', _pendingAuthType);
+import { supabase, pendingAuthType } from './supabase';
+console.log('[AuthProvider] pending auth type:', pendingAuthType);
 
 type AuthContextType = {
   user: User | null;
@@ -39,18 +33,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[AuthProvider] event:', event, 'pendingType:', _pendingAuthType, 'has session:', !!session);
+        console.log('[AuthProvider] event:', event, 'pendingType:', pendingAuthType, 'has session:', !!session);
 
         // Supabase ignores our redirectTo for verification/recovery emails
         // and always redirects to the Site URL. We captured the type from
         // the URL hash at module load (before Supabase cleared it).
-        if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && _pendingAuthType === 'recovery')) {
+        if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && pendingAuthType === 'recovery')) {
           console.log('[AuthProvider] recovery → /reset-password');
           window.location.href = '/reset-password';
           return;
         }
 
-        if (event === 'SIGNED_IN' && _pendingAuthType === 'signup') {
+        if (event === 'SIGNED_IN' && pendingAuthType === 'signup') {
           console.log('[AuthProvider] signup verification → signing out → /signin');
           await supabase.auth.signOut();
           window.location.href = '/signin?verified=true';
