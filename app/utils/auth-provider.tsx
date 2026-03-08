@@ -4,6 +4,13 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
+// Capture auth type from URL hash BEFORE Supabase consumes it.
+// Supabase clears the hash at module load time, so this must run first.
+const _pendingAuthType = typeof window !== 'undefined'
+  ? new URLSearchParams(window.location.hash.substring(1)).get('type')
+  : null;
+console.log('[AuthProvider] captured pending auth type:', _pendingAuthType);
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
@@ -32,30 +39,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        const hash = window.location.hash;
-        console.log('[AuthProvider] event:', event, 'hash type:', hash.match(/type=(\w+)/)?.[1] || 'none', 'has session:', !!session);
+        console.log('[AuthProvider] event:', event, 'pendingType:', _pendingAuthType, 'has session:', !!session);
 
         // Supabase ignores our redirectTo for verification/recovery emails
-        // and always redirects to the Site URL. Detect the type from the
-        // URL hash and handle accordingly.
-        if (event === 'PASSWORD_RECOVERY') {
-          console.log('[AuthProvider] PASSWORD_RECOVERY → /reset-password');
+        // and always redirects to the Site URL. We captured the type from
+        // the URL hash at module load (before Supabase cleared it).
+        if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && _pendingAuthType === 'recovery')) {
+          console.log('[AuthProvider] recovery → /reset-password');
           window.location.href = '/reset-password';
           return;
         }
 
-        if (event === 'SIGNED_IN') {
-          if (hash.includes('type=signup')) {
-            console.log('[AuthProvider] signup verification → signing out → /signin');
-            await supabase.auth.signOut();
-            window.location.href = '/signin?verified=true';
-            return;
-          }
-          if (hash.includes('type=recovery')) {
-            console.log('[AuthProvider] recovery via hash → /reset-password');
-            window.location.href = '/reset-password';
-            return;
-          }
+        if (event === 'SIGNED_IN' && _pendingAuthType === 'signup') {
+          console.log('[AuthProvider] signup verification → signing out → /signin');
+          await supabase.auth.signOut();
+          window.location.href = '/signin?verified=true';
+          return;
         }
 
         setSession(session);
