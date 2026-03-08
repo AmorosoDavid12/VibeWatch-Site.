@@ -24,10 +24,12 @@ app/
 │   └── feedback/
 │       └── page.tsx        # Feedback viewer page
 ├── api/
-│   └── admin/
-│       ├── auth/route.ts   # Admin authentication API
-│       ├── feedback/route.ts # Feedback CRUD API
-│       └── groups/route.ts # Group management API
+│   ├── admin/
+│   │   ├── auth/route.ts   # Admin authentication API
+│   │   ├── feedback/route.ts # Feedback CRUD API
+│   │   └── groups/route.ts # Group management API
+│   └── delete-account/
+│       └── route.ts        # Proxy to Supabase edge function for account deletion
 ├── auth/
 │   └── callback/
 │       └── page.tsx        # Client-side auth redirect handler (OAuth, email verify, recovery)
@@ -48,7 +50,7 @@ app/
 │   ├── TitleDocs.txt       # Title page documentation
 │   └── components/         # Gallery, RatingModal, Trailers, RelatedContent
 ├── utils/
-│   ├── auth-provider.tsx   # React Context (signIn, signUp, signInWithGoogle, signOut, PASSWORD_RECOVERY redirect)
+│   ├── auth-provider.tsx   # React Context (signIn, signUp, signInWithGoogle via GIS/ID token, signOut, PASSWORD_RECOVERY redirect)
 │   ├── supabase.ts         # Supabase client init + pendingAuthType hash capture
 │   ├── tmdb-api.ts         # TMDB API functions
 │   └── watchlist.ts        # Watchlist CRUD operations
@@ -70,7 +72,7 @@ Full design system spec: `.claude/skills/design-system/SKILL.md`
 ## Auth Flow
 
 - **Email/password:** `AuthProvider` wraps the app, exposes `signIn`, `signUp`, `signOut`
-- **Google OAuth:** `signInWithGoogle()` triggers Supabase OAuth redirect
+- **Google Sign-In:** `signInWithGoogle()` uses Google Identity Services (GIS) popup — loads `accounts.google.com/gsi/client`, shows FedCM account picker, calls `supabase.auth.signInWithIdToken()` with the credential JWT (no redirect)
 - **Email verification:** Supabase emails link → user lands on `vibewatch.app` → auth provider verifies → redirects to `/signin?verified=true`. On Android, shows "Open in VibeWatch App" button to deep link back to the mobile app.
 - **Password recovery:** Email link → user lands on `vibewatch.app` → `/auth/callback` detects `type=recovery` → redirects to `/reset-password`. On Android, offers to open the app instead. Fallback: `AuthProvider` listens for `PASSWORD_RECOVERY` event.
 - **Hash capture:** `supabase.ts` exports `pendingAuthType` — captures the `type` param from the URL hash before `createClient()` clears it (needed for recovery/signup detection)

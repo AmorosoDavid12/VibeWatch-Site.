@@ -1,5 +1,42 @@
 # VibeWatch Website Changelog
 
+## Google Identity Services & Account Deletion (Mar 8, 2026)
+
+### Google Sign-In: OAuth Redirect → GIS Popup
+- Replaced `supabase.auth.signInWithOAuth()` (full-page redirect through Supabase domain) with Google Identity Services (GIS) popup flow
+- Google consent screen now shows proper origin instead of `gihofdmqjwgkotwxdxms.supabase.co`
+- Loads GIS library (`accounts.google.com/gsi/client`) dynamically on first use
+- Generates nonce (raw + SHA-256 hashed) for secure token exchange
+- Uses `google.accounts.id.initialize()` + `prompt()` with FedCM for browser-native account picker
+- Calls `supabase.auth.signInWithIdToken()` with the credential JWT — no redirect, user stays on page
+- Existing `onAuthStateChange` SIGNED_IN handler + `ensureProfile()` fire automatically
+- Sign-in page silently handles user dismissal (no error shown), resets loading via `finally` block
+
+### Account Deletion from Header
+- Added "Delete Account" button to user dropdown in `Header.tsx`
+- Deletes profile row from `profiles` table, then calls `/api/delete-account` edge function proxy
+- Shows confirmation dialog before proceeding
+- Signs user out after deletion
+
+### Delete Account API Route (NEW)
+- New API route at `/api/delete-account` — proxies to Supabase edge function `delete-user-account`
+- Avoids CORS issues by routing through Next.js server
+
+### Auth Callback Fix
+- Fixed `/auth/callback` hash-fragment fallback to distinguish email verification from OAuth sessions
+- Email verification (`type=signup|email`) signs out and redirects to login
+- OAuth sessions redirect to `/` instead of incorrectly signing out
+
+### Update-Docs Skill Optimization
+- Rewrote `/update-docs` skill to use delta-based approach
+- Only inspects changes since the last docs commit instead of re-reading entire codebase
+- Short-circuits if nothing changed since last run
+
+**Files created:** `app/api/delete-account/route.ts`
+**Files modified:** `app/utils/auth-provider.tsx`, `app/signin/page.tsx`, `app/auth/callback/page.tsx`, `app/components/Header.tsx`, `.claude/skills/update-docs/SKILL.md`
+
+---
+
 ## Android App Bridge & Smart App Banner (Mar 8, 2026)
 
 ### Smart App Banner (`SmartAppBanner.tsx`)

@@ -194,7 +194,37 @@ const Header = () => {
               >
                 Watched
               </Link>
-              <button 
+              <button
+                onClick={async () => {
+                  setIsDropdownOpen(false);
+                  if (!confirm('Delete your account? This cannot be undone.')) return;
+                  try {
+                    // 1. Delete profile row
+                    console.log('[Auth] Deleting profile for user:', user.id);
+                    const { error: profileErr } = await supabase.from('profiles').delete().eq('id', user.id);
+                    if (profileErr) console.error('[Auth] Profile delete error:', profileErr.message);
+                    else console.log('[Auth] Profile deleted');
+
+                    // 2. Call edge function via API route to avoid CORS
+                    const { data: { session: currentSession } } = await supabase.auth.getSession();
+                    const accessToken = currentSession?.access_token;
+                    console.log('[Auth] Calling delete-account API route');
+                    const res = await fetch('/api/delete-account', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ userId: user.id, accessToken }),
+                    });
+                    console.log('[Auth] Delete account API response:', res.status, await res.text());
+                  } catch (err) {
+                    console.error('[Auth] Delete account error:', err);
+                  }
+                  signOut();
+                }}
+                className="block w-full text-left px-4 py-2 text-sm hover:bg-[#333] rounded text-red-400"
+              >
+                Delete Account
+              </button>
+              <button
                 onClick={() => {
                   setIsDropdownOpen(false);
                   signOut();

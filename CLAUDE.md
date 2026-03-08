@@ -62,12 +62,13 @@ npm run lint     # ESLint
 | `/api/admin/auth` | `app/api/admin/auth/route.ts` | Admin authentication |
 | `/api/admin/feedback` | `app/api/admin/feedback/route.ts` | Feedback CRUD |
 | `/api/admin/groups` | `app/api/admin/groups/route.ts` | Group management |
+| `/api/delete-account` | `app/api/delete-account/route.ts` | Proxy to Supabase edge function for account deletion |
 
 ## Utility Modules
 
 | Module | File | Purpose |
 |--------|------|---------|
-| `auth-provider` | `app/utils/auth-provider.tsx` | React Context (signIn, signUp, signInWithGoogle, signOut, PASSWORD_RECOVERY redirect) |
+| `auth-provider` | `app/utils/auth-provider.tsx` | React Context (signIn, signUp, signInWithGoogle via GIS/ID token, signOut, PASSWORD_RECOVERY redirect) |
 | `supabase` | `app/utils/supabase.ts` | Supabase client init + `pendingAuthType` hash capture |
 | `tmdb-api` | `app/utils/tmdb-api.ts` | TMDB API functions |
 | `watchlist` | `app/utils/watchlist.ts` | Watchlist CRUD operations |

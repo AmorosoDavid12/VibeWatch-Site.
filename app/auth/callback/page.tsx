@@ -108,12 +108,19 @@ function CallbackContent() {
         return;
       }
 
-      // Fallback: email verification via hash fragment (non-PKCE)
+      // Fallback: check if we have a session from hash fragment
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        await supabase.auth.signOut();
-        setMessage('Email verified! Please sign in.');
-        redirectWithCountdown('/signin', 3);
+        // If type is signup/email, it's email verification — sign out and redirect to login
+        if (type === 'signup' || type === 'email') {
+          await supabase.auth.signOut();
+          setMessage('Email verified! Please sign in.');
+          redirectWithCountdown('/signin', 3);
+          return;
+        }
+        // Otherwise it's OAuth — just redirect home
+        console.log('[Auth Callback] OAuth session detected, redirecting to /');
+        router.push('/');
         return;
       }
 

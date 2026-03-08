@@ -205,7 +205,7 @@ function SignInContent() {
     setLoading(true);
 
     try {
-      await signUp(email, password);
+      await signUp(email, password, username);
       setSuccessMessage('Check your email to verify your account');
       setActiveTab('login');
     } catch (err: unknown) {
@@ -221,7 +221,12 @@ function SignInContent() {
     try {
       await signInWithGoogle();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Google sign-in failed');
+      const message = err instanceof Error ? err.message : 'Google sign-in failed';
+      // Don't show error when user deliberately dismissed the prompt
+      if (message !== 'CANCELLED') {
+        setError(message);
+      }
+    } finally {
       setGoogleLoading(false);
     }
   };

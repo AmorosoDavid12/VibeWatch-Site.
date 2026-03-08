@@ -3,7 +3,7 @@ name: update-docs
 description: Refresh all project documentation files (CLAUDE.md and linked docs) based on current codebase state
 ---
 
-Audit and update all documentation files for the VibeWatch Website project. The goal is to keep docs accurate and in sync with the actual codebase.
+Audit and update all documentation files for the VibeWatch Website project. Uses a **delta-based approach** — only inspects what changed since the last docs update to minimize token usage.
 
 ## Files to Update
 
@@ -13,33 +13,84 @@ Audit and update all documentation files for the VibeWatch Website project. The 
 
 ## Audit Steps
 
-### 1. Gather Current State
-- Read `package.json` for dependency versions (next, react, supabase, tailwind, etc.)
-- Read `next.config.ts` for any custom Next.js configuration
-- Run `git log --oneline -20` to see recent commits
-- Run `git log --oneline HEAD --not master` if on a feature branch (to see unmerged work)
-- List files/directories in `app/` to check for new or removed routes
-- List files in `app/api/` for API routes
-- List files in `app/components/` for shared components
-- List files in `app/utils/` for utility functions
+### 1. Find the Baseline
 
-### 2. Check CLAUDE.md
-- Verify dependency versions match `package.json`
-- Verify the "Key Pages" table matches actual routes in `app/`
-- Check if new pages, API routes, or components need documentation
-- Verify build commands are still accurate
-- Verify the "Detailed Docs" table lists all files in `.claude/`
+Run these commands to determine what changed since docs were last updated:
 
-### 3. Check CHANGELOG.md
-- Compare recent git commits against changelog entries
-- Add entries for any features/fixes not yet documented
-- Follow the existing format: heading with brief description
+```bash
+# Find the last commit that touched any doc file
+git log -1 --format="%H %as" -- CLAUDE.md .claude/CHANGELOG.md .claude/ARCHITECTURE.md
+```
 
-### 4. Check ARCHITECTURE.md
-- Verify the directory structure matches the actual `app/` layout
-- Check if new top-level directories or config files have been added
-- Verify tech stack versions are current
-- Update deployment notes if process has changed
+Save that commit hash as `BASELINE`.
+
+### 2. Gather the Delta
+
+Run these in parallel:
+
+```bash
+# Commits since last docs update
+git log --oneline BASELINE..HEAD
+
+# Files changed since last docs update (committed)
+git diff --name-only BASELINE..HEAD
+
+# Uncommitted changes (staged + unstaged)
+git diff --name-only HEAD
+git diff --name-only --cached
+
+# Untracked files in app/
+git ls-files --others --exclude-standard app/
+```
+
+Combine all file lists into a single `CHANGED_FILES` set.
+
+### 3. Decide What to Audit
+
+Only audit doc sections relevant to the changed files:
+
+| If CHANGED_FILES includes... | Then audit... |
+|------------------------------|---------------|
+| `app/*/page.tsx` (new or removed) | CLAUDE.md "Key Pages" table |
+| `app/api/**` | CLAUDE.md "API Routes" table |
+| `app/components/**` | CLAUDE.md "Shared Components" table |
+| `app/utils/**` | CLAUDE.md "Utility Modules" table |
+| `package.json` | CLAUDE.md dependency versions + ARCHITECTURE.md tech stack |
+| `app/**` (any structural change) | ARCHITECTURE.md directory tree |
+| `.claude/skills/**` | CLAUDE.md "Skills" table |
+| `.claude/*.md` (non-changelog) | CLAUDE.md "Detailed Docs" table |
+
+**Always update:** `.claude/CHANGELOG.md` with new commits (this is the primary purpose).
+
+### 4. Read Only What's Needed
+
+- Only read `package.json` if it's in CHANGED_FILES
+- Only list `app/` directories if routes were added/removed
+- Only read doc files for sections that need updating
+- Do NOT re-read the entire codebase
+
+### 5. Update CHANGELOG.md
+
+- Read the existing changelog
+- Group new commits (since BASELINE) into a logical section
+- Write a new entry at the top following the existing format:
+  - `## Section Title (Mon DD, YYYY)` heading
+  - Sub-sections with `###` for related changes
+  - `**Files created:**` and `**Files modified:**` at the end
+  - `---` separator after the section
+- Include uncommitted/staged changes under a "Pending" note if significant
+
+### 6. Update CLAUDE.md and ARCHITECTURE.md
+
+Only edit the specific tables/sections identified in step 3. Do not rewrite untouched sections.
+
+## Skip Conditions
+
+If `git log --oneline BASELINE..HEAD` returns nothing AND there are no uncommitted changes, report "Docs are up to date" and stop — no reads or edits needed.
 
 ## Output
-After updating, summarize what changed in each file.
+
+After updating, summarize:
+- How many commits were processed
+- Which doc files were changed and what sections
+- Any structural changes detected (new pages, components, etc.)
