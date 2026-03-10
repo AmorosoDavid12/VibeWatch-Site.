@@ -713,3 +713,189 @@ export const getTVSimilar = async (id: number, page: number = 1): Promise<TMDBRe
     return null;
   }
 };
+
+// ===== SEARCH FUNCTIONS =====
+
+export interface TMDBGenre {
+  id: number;
+  name: string;
+}
+
+export interface TMDBGenreResponse {
+  genres: TMDBGenre[];
+}
+
+export const searchMulti = async (query: string, page: number = 1): Promise<TMDBResponse & { person_results?: TMDBPerson[] }> => {
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/search/multi?query=${encodeURIComponent(query)}&include_adult=false&language=en-US&page=${page}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_TOKEN}`,
+          'accept': 'application/json'
+        },
+        cache: 'no-store'
+      }
+    );
+    if (!response.ok) throw new Error('Failed to search multi');
+    const data = await response.json();
+    // Separate people from media results
+    const mediaResults: TMDBMedia[] = [];
+    const personResults: TMDBPerson[] = [];
+    for (const item of data.results) {
+      if (item.media_type === 'person') {
+        personResults.push(item as TMDBPerson);
+      } else {
+        mediaResults.push(item as TMDBMedia);
+      }
+    }
+    return {
+      page: data.page,
+      results: mediaResults,
+      total_pages: data.total_pages,
+      total_results: data.total_results,
+      person_results: personResults,
+    };
+  } catch (error) {
+    console.error('Error searching multi:', error);
+    return { page: 1, results: [], total_pages: 0, total_results: 0, person_results: [] };
+  }
+};
+
+export const searchMovies = async (query: string, page: number = 1, year?: number): Promise<TMDBResponse> => {
+  try {
+    let url = `${TMDB_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&include_adult=false&language=en-US&page=${page}`;
+    if (year) url += `&year=${year}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${TMDB_API_TOKEN}`,
+        'accept': 'application/json'
+      },
+      cache: 'no-store'
+    });
+    if (!response.ok) throw new Error('Failed to search movies');
+    const data: TMDBResponse = await response.json();
+    // Inject media_type since /search/movie doesn't include it
+    data.results = data.results.map(r => ({ ...r, media_type: 'movie' as const }));
+    return data;
+  } catch (error) {
+    console.error('Error searching movies:', error);
+    return { page: 1, results: [], total_pages: 0, total_results: 0 };
+  }
+};
+
+export const searchTV = async (query: string, page: number = 1, firstAirDateYear?: number): Promise<TMDBResponse> => {
+  try {
+    let url = `${TMDB_BASE_URL}/search/tv?query=${encodeURIComponent(query)}&include_adult=false&language=en-US&page=${page}`;
+    if (firstAirDateYear) url += `&first_air_date_year=${firstAirDateYear}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${TMDB_API_TOKEN}`,
+        'accept': 'application/json'
+      },
+      cache: 'no-store'
+    });
+    if (!response.ok) throw new Error('Failed to search TV');
+    const data: TMDBResponse = await response.json();
+    // Inject media_type since /search/tv doesn't include it
+    data.results = data.results.map(r => ({ ...r, media_type: 'tv' as const }));
+    return data;
+  } catch (error) {
+    console.error('Error searching TV:', error);
+    return { page: 1, results: [], total_pages: 0, total_results: 0 };
+  }
+};
+
+export const searchPerson = async (query: string, page: number = 1): Promise<TMDBPersonResponse> => {
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/search/person?query=${encodeURIComponent(query)}&include_adult=false&language=en-US&page=${page}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_TOKEN}`,
+          'accept': 'application/json'
+        },
+        cache: 'no-store'
+      }
+    );
+    if (!response.ok) throw new Error('Failed to search person');
+    return await response.json();
+  } catch (error) {
+    console.error('Error searching person:', error);
+    return { page: 1, results: [], total_pages: 0, total_results: 0 };
+  }
+};
+
+export const getMovieGenres = async (): Promise<TMDBGenre[]> => {
+  try {
+    const response = await fetch(`${TMDB_BASE_URL}/genre/movie/list?language=en`, {
+      headers: {
+        'Authorization': `Bearer ${TMDB_API_TOKEN}`,
+        'accept': 'application/json'
+      },
+      next: { revalidate: 3600 * 24 }
+    });
+    if (!response.ok) throw new Error('Failed to fetch movie genres');
+    const data: TMDBGenreResponse = await response.json();
+    return data.genres;
+  } catch (error) {
+    console.error('Error fetching movie genres:', error);
+    return [];
+  }
+};
+
+export const getPopularMovies = async (page: number = 1): Promise<TMDBResponse> => {
+  try {
+    const response = await fetch(`${TMDB_BASE_URL}/movie/popular?language=en-US&page=${page}`, {
+      headers: {
+        'Authorization': `Bearer ${TMDB_API_TOKEN}`,
+        'accept': 'application/json'
+      },
+      next: { revalidate: 3600 }
+    });
+    if (!response.ok) throw new Error('Failed to fetch popular movies');
+    const data: TMDBResponse = await response.json();
+    data.results = data.results.map(r => ({ ...r, media_type: 'movie' as const }));
+    return data;
+  } catch (error) {
+    console.error('Error fetching popular movies:', error);
+    return { page: 1, results: [], total_pages: 0, total_results: 0 };
+  }
+};
+
+export const getPopularTV = async (page: number = 1): Promise<TMDBResponse> => {
+  try {
+    const response = await fetch(`${TMDB_BASE_URL}/tv/popular?language=en-US&page=${page}`, {
+      headers: {
+        'Authorization': `Bearer ${TMDB_API_TOKEN}`,
+        'accept': 'application/json'
+      },
+      next: { revalidate: 3600 }
+    });
+    if (!response.ok) throw new Error('Failed to fetch popular TV');
+    const data: TMDBResponse = await response.json();
+    data.results = data.results.map(r => ({ ...r, media_type: 'tv' as const }));
+    return data;
+  } catch (error) {
+    console.error('Error fetching popular TV:', error);
+    return { page: 1, results: [], total_pages: 0, total_results: 0 };
+  }
+};
+
+export const getTVGenres = async (): Promise<TMDBGenre[]> => {
+  try {
+    const response = await fetch(`${TMDB_BASE_URL}/genre/tv/list?language=en`, {
+      headers: {
+        'Authorization': `Bearer ${TMDB_API_TOKEN}`,
+        'accept': 'application/json'
+      },
+      next: { revalidate: 3600 * 24 }
+    });
+    if (!response.ok) throw new Error('Failed to fetch TV genres');
+    const data: TMDBGenreResponse = await response.json();
+    return data.genres;
+  } catch (error) {
+    console.error('Error fetching TV genres:', error);
+    return [];
+  }
+};

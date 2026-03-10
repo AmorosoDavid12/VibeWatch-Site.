@@ -150,7 +150,7 @@ function CallbackContent() {
       : 'vibewatch://login';
 
     return (
-      <div className="flex min-h-screen bg-base items-center justify-center">
+      <div className="flex min-h-screen bg-page items-center justify-center">
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-500/15">
             <svg className="h-7 w-7 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -201,7 +201,7 @@ function CallbackContent() {
   }
 
   return (
-    <div className="flex min-h-screen bg-base items-center justify-center">
+    <div className="flex min-h-screen bg-page items-center justify-center">
       <div className="text-center">
         <div className="animate-spin h-8 w-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4" />
         <p className="text-secondary text-sm">{message}</p>
@@ -213,7 +213,7 @@ function CallbackContent() {
 export default function AuthCallbackPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen bg-base items-center justify-center">
+      <div className="flex min-h-screen bg-page items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-accent border-t-transparent rounded-full" />
       </div>
     }>

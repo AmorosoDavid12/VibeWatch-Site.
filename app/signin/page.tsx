@@ -237,7 +237,7 @@ function SignInContent() {
     'w-full bg-[var(--bg-input)] text-primary px-4 py-3 rounded-[var(--radius-md)] border border-[var(--border-default)] focus:outline-none focus:border-[var(--border-focus)] focus:ring-1 focus:ring-[var(--border-focus)] transition-colors duration-fast placeholder:text-tertiary';
 
   return (
-    <div className="flex min-h-screen bg-base">
+    <div className="flex min-h-screen bg-page">
       {/* Brand panel - left side (desktop only) */}
       <AuthBrandPanel />
 
@@ -388,7 +388,7 @@ function SignInContent() {
                   <div className="w-full border-t border-[var(--border-subtle)]" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-base px-4 text-tertiary">or</span>
+                  <span className="bg-page px-4 text-tertiary">or</span>
                 </div>
               </div>
 
@@ -585,7 +585,7 @@ function SignInContent() {
                   <div className="w-full border-t border-[var(--border-subtle)]" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-base px-4 text-tertiary">or</span>
+                  <span className="bg-page px-4 text-tertiary">or</span>
                 </div>
               </div>
 
@@ -628,7 +628,7 @@ function SignInContent() {
 export default function SignInPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen bg-base items-center justify-center">
+      <div className="flex min-h-screen bg-page items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-accent border-t-transparent rounded-full" />
       </div>
     }>

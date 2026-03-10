@@ -51,7 +51,7 @@
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
 
   /* Surface colors */
-  --color-base: var(--bg-base);
+  --color-page: var(--bg-base);
   --color-surface: var(--bg-surface);
   --color-elevated: var(--bg-elevated);
   --color-overlay: var(--bg-overlay);
@@ -155,6 +155,44 @@ body {
 /* ===== UTILITY CLASSES ===== */
 .animate-fade-in-out {
   animation: fade-in-out 2.5s both;
+}
+
+/* Hover lift — only on devices that support hover */
+@media (hover: hover) {
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Horizontal scroll row fade mask (desktop only) */
+@media (hover: hover) {
+  .scroll-row-mask {
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 2%,
+      black 98%,
+      transparent 100%
+    );
+  }
+}
+
+/* Embla carousel grab cursor while dragging */
+.embla-viewport.is-dragging {
+  cursor: grabbing !important;
+}
+.embla-viewport.is-dragging * {
+  cursor: inherit !important;
 }
 
 /* Reduced motion */

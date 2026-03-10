@@ -98,7 +98,7 @@ export default function ResetPasswordPage() {
   // Loading state while checking session
   if (hasSession === null) {
     return (
-      <div className="flex min-h-screen bg-base items-center justify-center">
+      <div className="flex min-h-screen bg-page items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-accent border-t-transparent rounded-full" />
       </div>
     );
@@ -107,7 +107,7 @@ export default function ResetPasswordPage() {
   // No recovery session
   if (!hasSession) {
     return (
-      <div className="flex min-h-screen bg-base">
+      <div className="flex min-h-screen bg-page">
         <AuthBrandPanel />
         <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
           <div className="w-full max-w-[420px]">
@@ -135,7 +135,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-base">
+    <div className="flex min-h-screen bg-page">
       <AuthBrandPanel />
 
       <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">

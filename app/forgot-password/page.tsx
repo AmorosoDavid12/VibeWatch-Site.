@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
     'w-full bg-[var(--bg-input)] text-primary px-4 py-3 rounded-[var(--radius-md)] border border-[var(--border-default)] focus:outline-none focus:border-[var(--border-focus)] focus:ring-1 focus:ring-[var(--border-focus)] transition-colors duration-fast placeholder:text-tertiary';
 
   return (
-    <div className="flex min-h-screen bg-base">
+    <div className="flex min-h-screen bg-page">
       {/* Brand panel - left side (desktop only) */}
       <AuthBrandPanel />
 

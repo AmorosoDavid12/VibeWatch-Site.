@@ -2,7 +2,7 @@ import Image from 'next/image';
 
 export default function AuthBrandPanel() {
   return (
-    <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center bg-base">
+    <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center bg-page">
       {/* Gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0a0008] via-base to-[#120008]" />
 

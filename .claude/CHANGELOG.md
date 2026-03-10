@@ -1,5 +1,42 @@
 # VibeWatch Website Changelog
 
+## Embla Carousel Auto-Scroll for Search Page (Mar 11, 2026)
+
+### Replaced Hand-Rolled Auto-Scroll with Embla Carousel
+- Removed custom `requestAnimationFrame` pixel-scroll loop and all manual scroll state management
+- Installed `embla-carousel-react` and `embla-carousel-auto-scroll` (v8.6.0)
+- Each `ScrollRow` now uses `useEmblaCarousel` with `loop: true`, `dragFree: true`, `align: 'start'`
+- Auto-scroll via `AutoScroll` plugin with different speeds per row for visual variety:
+  - Trending Now: 0.64 px/frame
+  - Popular Movies: 0.48 px/frame
+  - Popular TV Shows: 0.56 px/frame
+
+### Drag vs Click Detection (Pointer Displacement)
+- Previous approach used Embla's `scroll` event to detect drags, but auto-scroll momentum also fires `scroll` events — causing every click to be falsely blocked
+- New approach: records pointer position on `pointerDown`, then on `click` measures displacement against a 6px threshold
+- Simple clicks (< 6px movement) pass through to card links; drag gestures (> 6px) are blocked
+- Completely immune to auto-scroll, momentum, or any other scroll source
+
+### Grab Cursor
+- Added `cursor-grab` on the Embla viewport div
+- Toggles `is-dragging` class via Embla's `pointerDown`/`pointerUp` events → `cursor: grabbing`
+- CSS rules in `globals.css` (`.embla-viewport.is-dragging`)
+
+### Manual Hover Pause/Resume
+- Embla's built-in `stopOnMouseEnter` loses track of the cursor after hard drag releases
+- Replaced with manual `mouseenter`/`mouseleave` listeners on the wrapper div
+- Calls `emblaApi.plugins().autoScroll.stop()` / `.play()` directly
+
+### Cleanup
+- Removed old `drag-scroll`, `dragging`, `scroll-smooth` CSS classes
+- Removed `staggerMs`, `speed` as manual props — each row self-configures
+- Console logs for debugging: `pointerDown`, click displacement, `mouseenter`/`mouseleave` auto-scroll state
+
+**Files modified:** `app/search/page.tsx`, `app/globals.css`, `package.json`
+**Dependencies added:** `embla-carousel-react@^8.6.0`, `embla-carousel-auto-scroll@^8.6.0`
+
+---
+
 ## Google Identity Services & Account Deletion (Mar 8, 2026)
 
 ### Google Sign-In: OAuth Redirect → GIS Popup

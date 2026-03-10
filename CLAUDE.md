@@ -9,6 +9,10 @@
 - **Font:** Inter (Google Fonts)
 - **Deploy:** Push to `master` branch (auto-deploys)
 
+## Communication
+
+- **Ask questions when unclear** — Don't guess at requirements. Ask clarifying questions to make sure things are right before implementing.
+
 ## Related Projects
 
 ### VibeWatch Mobile App (React Native / Expo)
@@ -72,6 +76,17 @@ npm run lint     # ESLint
 | `supabase` | `app/utils/supabase.ts` | Supabase client init + `pendingAuthType` hash capture |
 | `tmdb-api` | `app/utils/tmdb-api.ts` | TMDB API functions |
 | `watchlist` | `app/utils/watchlist.ts` | Watchlist CRUD operations |
+
+## Embla Carousel Pattern (Reusable)
+
+The search page (`app/search/page.tsx`) has a reusable `ScrollRow` component for auto-scrolling horizontal card rows. Key implementation details:
+
+- **Library:** `embla-carousel-react` + `embla-carousel-auto-scroll` (v8.6.0)
+- **Config:** `useEmblaCarousel({ loop: true, dragFree: true, align: 'start' }, [AutoScroll({ speed, startDelay, stopOnInteraction: false })])`
+- **Drag vs click detection:** Measures pointer displacement (6px threshold) between `pointerDown` and `click` — do NOT use Embla's `scroll` event for this, as auto-scroll triggers it too and blocks all clicks
+- **Grab cursor:** Toggle `is-dragging` class via Embla's `pointerDown`/`pointerUp` events; CSS sets `cursor: grabbing` (see `.embla-viewport.is-dragging` in `globals.css`)
+- **Hover pause:** Do NOT use `stopOnMouseEnter` option (loses cursor after hard drags). Instead, manually listen to `mouseenter`/`mouseleave` on a wrapper and call `emblaApi.plugins().autoScroll.stop()` / `.play()`
+- **Slide sizing:** Slides use `flex-shrink-0` with explicit widths (e.g., `w-[130px] sm:w-[150px]`), not percentage-based
 
 ## Design System
 

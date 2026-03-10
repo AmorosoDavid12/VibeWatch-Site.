@@ -7,6 +7,7 @@
 - **TypeScript 5**
 - **Tailwind CSS 4** (via `@tailwindcss/postcss`, configured in CSS with `@theme inline`)
 - **Supabase** — auth + database (`@supabase/supabase-js` ^2.49.4)
+- **Embla Carousel** — horizontal scroll rows (`embla-carousel-react` + `embla-carousel-auto-scroll` ^8.6.0)
 - **Font:** Inter (Google Fonts, loaded via `next/font`)
 
 ## Directory Structure
