@@ -307,16 +307,23 @@ body {
   min-width: 180px;
   height: 80px;
   border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
   cursor: pointer;
-  transition: opacity 200ms var(--ease-default);
+  transition: transform 250ms var(--ease-default), filter 250ms var(--ease-default), border-color 250ms var(--ease-default);
   -webkit-tap-highlight-color: transparent;
 }
 
 @media (hover: hover) {
   .collection-card:hover {
-    opacity: 0.85;
+    transform: scale(1.04);
+    filter: brightness(1.1);
+    border-color: rgba(255, 255, 255, 0.14);
   }
+}
+
+.collection-card-active {
+  border-color: var(--accent);
 }
 
 .search-popover {
