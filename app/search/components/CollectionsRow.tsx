@@ -106,7 +106,7 @@ export default function CollectionsRow({ activeCollectionId, onCollectionClick }
               const IconComponent = ICON_MAP[col.icon];
 
               return (
-                <div key={`${col.id}-${idx}`} className="flex-shrink-0 px-1.5 md:px-2">
+                <div key={`${col.id}-${idx}`} className="flex-shrink-0 px-1.5 md:px-2 py-1">
                   <button
                     onClick={() => onCollectionClick(col)}
                     className={`collection-card md:!min-w-[220px] ${isActive ? 'collection-card-active' : ''}`}
@@ -122,11 +122,11 @@ export default function CollectionsRow({ activeCollectionId, onCollectionClick }
                       }}
                     />
 
-                    {/* Bottom vignette for text readability */}
+                    {/* Scrim — gentle darkening across the card for text readability */}
                     <div
                       className="absolute inset-0 z-[2] pointer-events-none"
                       style={{
-                        background: 'linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)',
+                        background: 'linear-gradient(to right, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.10) 65%, transparent 100%)',
                       }}
                     />
 
@@ -145,14 +145,20 @@ export default function CollectionsRow({ activeCollectionId, onCollectionClick }
                       <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-accent z-[5]" />
                     )}
 
-                    {/* Title — bottom-left with text shadow */}
-                    <div className="absolute inset-0 flex items-end p-3 md:p-3.5 z-[6]">
+                    {/* Text group — vertically centered, left-aligned */}
+                    <div className="absolute inset-0 flex flex-col justify-center p-3 md:p-3.5 z-[6] pr-16 md:pr-20">
                       <h3
                         className="text-white font-bold text-[13px] md:text-sm leading-tight tracking-[0.01em]"
-                        style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}
+                        style={{ textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}
                       >
                         {col.title}
                       </h3>
+                      <p
+                        className="text-white/55 text-[10px] md:text-[11px] font-medium leading-snug mt-0.5"
+                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
+                      >
+                        {col.description}
+                      </p>
                     </div>
                   </button>
                 </div>

@@ -3,6 +3,7 @@ import type { DiscoverParams } from '../utils/tmdb-api';
 export interface CollectionConfig {
   id: string;
   title: string;
+  description: string;
   icon: string;
   gradient: [string, string];
   discoverParams: DiscoverParams;
@@ -12,6 +13,7 @@ export const COLLECTIONS: CollectionConfig[] = [
   {
     id: 'oscar-worthy',
     title: 'Oscar Worthy',
+    description: 'Award-caliber masterpieces',
     icon: 'trophy',
     gradient: ['#A07B28', '#D4A843'],
     discoverParams: {
@@ -23,6 +25,7 @@ export const COLLECTIONS: CollectionConfig[] = [
   {
     id: 'hidden-gems',
     title: 'Hidden Gems',
+    description: 'Great films few have seen',
     icon: 'diamond',
     gradient: ['#0E8A6F', '#17B890'],
     discoverParams: {
@@ -35,6 +38,7 @@ export const COLLECTIONS: CollectionConfig[] = [
   {
     id: 'based-on-true-stories',
     title: 'Based on True Stories',
+    description: 'Real events, real drama',
     icon: 'scroll',
     gradient: ['#C45E10', '#E07820'],
     discoverParams: {
@@ -45,6 +49,7 @@ export const COLLECTIONS: CollectionConfig[] = [
   {
     id: '90s-classics',
     title: '90s Classics',
+    description: 'The golden decade of cinema',
     icon: 'film-reel',
     gradient: ['#7B3FA0', '#A855C8'],
     discoverParams: {
@@ -58,6 +63,7 @@ export const COLLECTIONS: CollectionConfig[] = [
   {
     id: 'action-blockbusters',
     title: 'Action Blockbusters',
+    description: 'High-octane thrills',
     icon: 'lightning',
     gradient: ['#B80710', '#E50914'],
     discoverParams: {
@@ -69,6 +75,7 @@ export const COLLECTIONS: CollectionConfig[] = [
   {
     id: 'international-cinema',
     title: 'International Cinema',
+    description: 'Best from around the world',
     icon: 'globe-hemisphere-west',
     gradient: ['#1A5F8A', '#2980B9'],
     discoverParams: {
@@ -81,6 +88,7 @@ export const COLLECTIONS: CollectionConfig[] = [
   {
     id: 'comfort-rewatches',
     title: 'Comfort Rewatches',
+    description: 'Familiar favorites to enjoy again',
     icon: 'couch',
     gradient: ['#D48020', '#F0A030'],
     discoverParams: {
@@ -93,6 +101,7 @@ export const COLLECTIONS: CollectionConfig[] = [
   {
     id: 'animated-worlds',
     title: 'Animated Worlds',
+    description: 'The finest in animation',
     icon: 'magic-wand',
     gradient: ['#6A30A0', '#3080C0'],
     discoverParams: {
