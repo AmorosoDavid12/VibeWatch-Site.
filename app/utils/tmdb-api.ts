@@ -899,3 +899,113 @@ export const getTVGenres = async (): Promise<TMDBGenre[]> => {
     return [];
   }
 };
+
+// ===== DISCOVER FUNCTIONS =====
+
+export interface DiscoverParams {
+  with_genres?: string;
+  with_keywords?: string;
+  sort_by?: string;
+  voteAverageGte?: number;
+  voteCountGte?: number;
+  voteCountLte?: number;
+  dateGte?: string;
+  dateLte?: string;
+  with_original_language?: string;
+  page?: number;
+}
+
+export const discoverMovies = async (params: DiscoverParams): Promise<TMDBResponse> => {
+  try {
+    const searchParams = new URLSearchParams({
+      include_adult: 'false',
+      language: 'en-US',
+      sort_by: params.sort_by || 'popularity.desc',
+      'vote_count.gte': String(params.voteCountGte ?? 50),
+      page: String(params.page || 1),
+    });
+    if (params.with_genres) searchParams.set('with_genres', params.with_genres);
+    if (params.with_keywords) searchParams.set('with_keywords', params.with_keywords);
+    if (params.voteAverageGte) searchParams.set('vote_average.gte', String(params.voteAverageGte));
+    if (params.voteCountLte) searchParams.set('vote_count.lte', String(params.voteCountLte));
+    if (params.dateGte) searchParams.set('primary_release_date.gte', params.dateGte);
+    if (params.dateLte) searchParams.set('primary_release_date.lte', params.dateLte);
+    if (params.with_original_language) searchParams.set('with_original_language', params.with_original_language);
+
+    const response = await fetch(
+      `${TMDB_BASE_URL}/discover/movie?${searchParams.toString()}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_TOKEN}`,
+          'accept': 'application/json'
+        },
+        cache: 'no-store'
+      }
+    );
+    if (!response.ok) throw new Error('Failed to discover movies');
+    const data: TMDBResponse = await response.json();
+    data.results = data.results.map(r => ({ ...r, media_type: 'movie' as const }));
+    return data;
+  } catch (error) {
+    console.error('Error discovering movies:', error);
+    return { page: 1, results: [], total_pages: 0, total_results: 0 };
+  }
+};
+
+export const discoverTV = async (params: DiscoverParams): Promise<TMDBResponse> => {
+  try {
+    const searchParams = new URLSearchParams({
+      include_adult: 'false',
+      language: 'en-US',
+      sort_by: params.sort_by || 'popularity.desc',
+      'vote_count.gte': String(params.voteCountGte ?? 50),
+      page: String(params.page || 1),
+    });
+    if (params.with_genres) searchParams.set('with_genres', params.with_genres);
+    if (params.with_keywords) searchParams.set('with_keywords', params.with_keywords);
+    if (params.voteAverageGte) searchParams.set('vote_average.gte', String(params.voteAverageGte));
+    if (params.voteCountLte) searchParams.set('vote_count.lte', String(params.voteCountLte));
+    if (params.dateGte) searchParams.set('first_air_date.gte', params.dateGte);
+    if (params.dateLte) searchParams.set('first_air_date.lte', params.dateLte);
+    if (params.with_original_language) searchParams.set('with_original_language', params.with_original_language);
+
+    const response = await fetch(
+      `${TMDB_BASE_URL}/discover/tv?${searchParams.toString()}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_TOKEN}`,
+          'accept': 'application/json'
+        },
+        cache: 'no-store'
+      }
+    );
+    if (!response.ok) throw new Error('Failed to discover TV');
+    const data: TMDBResponse = await response.json();
+    data.results = data.results.map(r => ({ ...r, media_type: 'tv' as const }));
+    return data;
+  } catch (error) {
+    console.error('Error discovering TV:', error);
+    return { page: 1, results: [], total_pages: 0, total_results: 0 };
+  }
+};
+
+export const searchKeywords = async (query: string): Promise<{ id: number; name: string }[]> => {
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/search/keyword?query=${encodeURIComponent(query)}&page=1`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_TOKEN}`,
+          'accept': 'application/json'
+        },
+        cache: 'no-store'
+      }
+    );
+    if (!response.ok) throw new Error('Failed to search keywords');
+    const data = await response.json();
+    return data.results || [];
+  } catch (error) {
+    console.error('Error searching keywords:', error);
+    return [];
+  }
+};

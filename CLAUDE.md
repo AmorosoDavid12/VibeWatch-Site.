@@ -1,5 +1,9 @@
 # VibeWatch Website - Claude Code Instructions
 
+## Product Vision
+
+Read `vision.md` before brainstorming, designing, or making product decisions. It contains the unified product vision, target audience, competitive positioning, and detailed screen-by-screen specs for both mobile and web apps.
+
 ## Project Overview
 
 - **Domain:** vibewatch.app
@@ -111,3 +115,4 @@ All UI decisions should reference the design system skill:
 |-------|---------|
 | `.claude/skills/update-docs/` | Audit and refresh all documentation files |
 | `.claude/skills/design-system/` | Complete design system blueprint — tokens, components, and page specs for all screens |
+| `.claude/skills/whats-next/` | Analyze project state and suggest prioritized next tasks |

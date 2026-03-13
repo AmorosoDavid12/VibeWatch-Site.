@@ -8,6 +8,13 @@ import Link from 'next/link';
 import useEmblaCarousel from 'embla-carousel-react';
 import AutoScroll from 'embla-carousel-auto-scroll';
 import Header from '../components/Header';
+import MoodPillsRow from './components/MoodPillsRow';
+import GenreChipsRow from './components/GenreChipsRow';
+import QuickFiltersRow, { decadeToDateRange } from './components/QuickFiltersRow';
+import CollectionsRow from './components/CollectionsRow';
+import ActiveFiltersBar from './components/ActiveFiltersBar';
+import { MOODS, buildDiscoverParams } from '../config/moods';
+import { COLLECTIONS, type CollectionConfig } from '../config/collections';
 import {
   searchMulti,
   searchMovies,
@@ -16,11 +23,16 @@ import {
   getTrending,
   getPopularMovies,
   getPopularTV,
+  getMovieGenres,
+  discoverMovies,
+  discoverTV,
   getImageUrl,
   getTitle,
   getYear,
   type TMDBMedia,
   type TMDBPerson,
+  type TMDBGenre,
+  type DiscoverParams,
 } from '../utils/tmdb-api';
 
 // ===== Types =====
@@ -136,7 +148,6 @@ function PosterCard({ item }: { item: TMDBMedia }) {
             </svg>
           </div>
         )}
-        {/* Rating badge */}
         {rating && (
           <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/70 rounded-[var(--radius-sm)] px-1.5 py-0.5">
             <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -156,7 +167,7 @@ function PosterCard({ item }: { item: TMDBMedia }) {
 
 // ===== Horizontal Scroll Row (Embla Carousel + Auto Scroll) =====
 
-const DRAG_THRESHOLD = 6; // px — movement below this counts as a click, not a drag
+const DRAG_THRESHOLD = 6;
 
 function ScrollRow({
   title,
@@ -177,23 +188,15 @@ function ScrollRow({
     [AutoScroll({ speed, startDelay: 1000, stopOnInteraction: false })]
   );
 
-  // Merge refs: emblaRef (callback) + viewportRef (for cursor toggling)
   const setRef = useCallback((node: HTMLDivElement | null) => {
     viewportRef.current = node;
     emblaRef(node);
   }, [emblaRef]);
 
-  // Grab cursor while dragging
   useEffect(() => {
     if (!emblaApi) return;
-
-    const onPointerDown = () => {
-      viewportRef.current?.classList.add('is-dragging');
-    };
-    const onPointerUp = () => {
-      viewportRef.current?.classList.remove('is-dragging');
-    };
-
+    const onPointerDown = () => viewportRef.current?.classList.add('is-dragging');
+    const onPointerUp = () => viewportRef.current?.classList.remove('is-dragging');
     emblaApi.on('pointerDown', onPointerDown);
     emblaApi.on('pointerUp', onPointerUp);
     return () => {
@@ -202,53 +205,32 @@ function ScrollRow({
     };
   }, [emblaApi]);
 
-  // Manually pause/resume auto-scroll on hover (more reliable than stopOnMouseEnter
-  // which can miss re-entry after a hard drag release)
   useEffect(() => {
     if (!emblaApi) return;
-    const wrapper = viewportRef.current?.parentElement; // .scroll-row-mask
+    const wrapper = viewportRef.current?.parentElement;
     if (!wrapper) return;
-
-    const onEnter = () => {
-      const plugin = emblaApi.plugins()?.autoScroll;
-      if (plugin) {
-        plugin.stop();
-        console.log(`[ScrollRow:${title}] mouseenter → autoScroll stopped`);
-      }
-    };
-    const onLeave = () => {
-      const plugin = emblaApi.plugins()?.autoScroll;
-      if (plugin) {
-        plugin.play();
-        console.log(`[ScrollRow:${title}] mouseleave → autoScroll resumed`);
-      }
-    };
-
+    const onEnter = () => emblaApi.plugins()?.autoScroll?.stop();
+    const onLeave = () => emblaApi.plugins()?.autoScroll?.play();
     wrapper.addEventListener('mouseenter', onEnter);
     wrapper.addEventListener('mouseleave', onLeave);
     return () => {
       wrapper.removeEventListener('mouseenter', onEnter);
       wrapper.removeEventListener('mouseleave', onLeave);
     };
-  }, [emblaApi, title]);
+  }, [emblaApi]);
 
-  // Record pointer start position
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     startPos.current = { x: e.clientX, y: e.clientY };
-    console.log(`[ScrollRow:${title}] pointerDown at (${e.clientX}, ${e.clientY})`);
-  }, [title]);
+  }, []);
 
-  // Block link clicks only if pointer actually moved beyond threshold
   const handleClickCapture = useCallback((e: React.MouseEvent) => {
     const dx = Math.abs(e.clientX - startPos.current.x);
     const dy = Math.abs(e.clientY - startPos.current.y);
-    const wasDrag = dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD;
-    console.log(`[ScrollRow:${title}] click — dx=${dx.toFixed(0)} dy=${dy.toFixed(0)} threshold=${DRAG_THRESHOLD} → ${wasDrag ? 'BLOCKED (drag)' : 'ALLOWED (click)'}`);
-    if (wasDrag) {
+    if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
       e.preventDefault();
       e.stopPropagation();
     }
-  }, [title]);
+  }, []);
 
   if (loading) {
     return (
@@ -281,7 +263,7 @@ function ScrollRow({
   );
 }
 
-// ===== Media Card (matches PosterCard style) =====
+// ===== Media Card (for grid results) =====
 
 function MediaCard({ item }: { item: TMDBMedia }) {
   const title = getTitle(item);
@@ -290,10 +272,7 @@ function MediaCard({ item }: { item: TMDBMedia }) {
   const typeLabel = item.media_type === 'movie' ? 'Movie' : 'TV';
 
   return (
-    <Link
-      href={`/title?id=${item.id}&type=${item.media_type}`}
-      className="group"
-    >
+    <Link href={`/title?id=${item.id}&type=${item.media_type}`} className="group">
       <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-elevated border border-border-subtle transition-all duration-normal hover-lift">
         {item.poster_path ? (
           <Image
@@ -310,11 +289,9 @@ function MediaCard({ item }: { item: TMDBMedia }) {
             </svg>
           </div>
         )}
-        {/* Type badge */}
         <span className="absolute top-1.5 left-1.5 bg-black/70 text-[10px] font-medium text-white px-1.5 py-0.5 rounded-[var(--radius-sm)]">
           {typeLabel}
         </span>
-        {/* Rating badge */}
         {rating && (
           <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/70 rounded-[var(--radius-sm)] px-1.5 py-0.5">
             <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -377,7 +354,7 @@ function PersonCard({ person }: { person: TMDBPerson }) {
   );
 }
 
-// ===== Media Results Grid =====
+// ===== Grid Components =====
 
 function MediaResultsGrid({ results }: { results: TMDBMedia[] }) {
   if (results.length === 0) return null;
@@ -389,8 +366,6 @@ function MediaResultsGrid({ results }: { results: TMDBMedia[] }) {
     </div>
   );
 }
-
-// ===== People Results Grid =====
 
 function PeopleResultsGrid({ results }: { results: TMDBPerson[] }) {
   if (results.length === 0) return null;
@@ -419,76 +394,25 @@ function NoResults({ query }: { query: string }) {
   );
 }
 
-// ===== Empty State =====
+// ===== Movie-to-TV Genre Mapping =====
 
-function EmptyState({
-  recentSearches,
-  trendingItems,
-  popularMovies,
-  popularTV,
-  isLoadingDiscover,
-  onSearchClick,
-  onRemoveRecent,
-  onClearRecent,
-}: {
-  recentSearches: string[];
-  trendingItems: TMDBMedia[];
-  popularMovies: TMDBMedia[];
-  popularTV: TMDBMedia[];
-  isLoadingDiscover: boolean;
-  onSearchClick: (query: string) => void;
-  onRemoveRecent: (query: string) => void;
-  onClearRecent: () => void;
-}) {
-  return (
-    <div className="space-y-8">
-      {/* Recent Searches */}
-      {recentSearches.length > 0 && (
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg md:text-xl font-semibold text-primary">Recent Searches</h2>
-            <button
-              onClick={onClearRecent}
-              className="text-xs text-search hover:underline min-h-[44px] flex items-center px-2"
-            >
-              Clear all
-            </button>
-          </div>
-          <div className="space-y-0.5">
-            {recentSearches.map((query) => (
-              <div key={query} className="flex items-center group">
-                <button
-                  onClick={() => onSearchClick(query)}
-                  className="flex-1 flex items-center gap-3 text-left py-2.5 px-3 rounded-lg hover:bg-surface transition-colors min-h-[44px]"
-                >
-                  <svg className="w-4 h-4 text-tertiary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-sm text-primary truncate">{query}</span>
-                </button>
-                <button
-                  onClick={() => onRemoveRecent(query)}
-                  className="p-2 text-tertiary hover:text-primary transition-colors opacity-0 group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                  aria-label={`Remove "${query}" from recent searches`}
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+const MOVIE_TO_TV_GENRE: Record<number, number | undefined> = {
+  28: 10759,    // Action → Action & Adventure
+  12: 10759,    // Adventure → Action & Adventure
+  14: 10765,    // Fantasy → Sci-Fi & Fantasy
+  10749: 18,    // Romance → Drama
+  878: 10765,   // Science Fiction → Sci-Fi & Fantasy
+  53: 9648,     // Thriller → Mystery
+  10752: 10768, // War → War & Politics
+};
 
-      {/* Keys prevent React from unmounting these when the recent-searches section above appears/disappears */}
-      <ScrollRow key="trending" title="Trending Now" items={trendingItems.slice(0, 20)} isLoading={isLoadingDiscover && trendingItems.length === 0} speed={0.64} />
-
-      <ScrollRow key="popular-movies" title="Popular Movies" items={popularMovies.slice(0, 20)} isLoading={isLoadingDiscover && popularMovies.length === 0} speed={0.48} />
-
-      <ScrollRow key="popular-tv" title="Popular TV Shows" items={popularTV.slice(0, 20)} isLoading={isLoadingDiscover && popularTV.length === 0} speed={0.56} />
-    </div>
-  );
+function mapGenresToTV(movieGenreIds: number[]): number[] {
+  const tvIds = new Set<number>();
+  for (const id of movieGenreIds) {
+    const tvId = MOVIE_TO_TV_GENRE[id];
+    tvIds.add(tvId !== undefined ? tvId : id);
+  }
+  return Array.from(tvIds);
 }
 
 // ===== Search Content (uses useSearchParams) =====
@@ -498,8 +422,14 @@ function SearchContent() {
   const router = useRouter();
   const initialQuery = searchParams.get('q') || '';
   const initialTab = (searchParams.get('tab') as TabType) || 'all';
+  const initialMood = searchParams.get('mood') || null;
+  const initialGenre = searchParams.get('genre') ? Number(searchParams.get('genre')) : null;
+  const initialDecade = searchParams.get('decade') || null;
+  const initialRating = searchParams.get('rating') ? Number(searchParams.get('rating')) : null;
+  const initialSort = searchParams.get('sort') || 'popularity.desc';
+  const initialCollection = searchParams.get('collection') || null;
 
-  // State
+  // ── Search state ──
   const [inputValue, setInputValue] = useState(initialQuery);
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [mediaResults, setMediaResults] = useState<TMDBMedia[]>([]);
@@ -510,22 +440,49 @@ function SearchContent() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  // ── Discover state ──
   const [trendingItems, setTrendingItems] = useState<TMDBMedia[]>([]);
   const [popularMovies, setPopularMovies] = useState<TMDBMedia[]>([]);
   const [popularTV, setPopularTV] = useState<TMDBMedia[]>([]);
   const [isLoadingDiscover, setIsLoadingDiscover] = useState(true);
 
-  // Refs
+  // ── Filter state ──
+  const [activeMood, setActiveMood] = useState<string | null>(initialMood);
+  const [activeGenre, setActiveGenre] = useState<number | null>(initialGenre);
+  const [activeDecade, setActiveDecade] = useState<string | null>(initialDecade);
+  const [activeRating, setActiveRating] = useState<number | null>(initialRating);
+  const [activeSort, setActiveSort] = useState(initialSort);
+  const [activeCollection, setActiveCollection] = useState<CollectionConfig | null>(
+    initialCollection ? COLLECTIONS.find(c => c.id === initialCollection) || null : null
+  );
+
+  // ── Browse state ──
+  const [browseResults, setBrowseResults] = useState<TMDBMedia[]>([]);
+  const [browsePage, setBrowsePage] = useState(1);
+  const [browseTotalPages, setBrowseTotalPages] = useState(0);
+  const [isBrowseLoading, setIsBrowseLoading] = useState(false);
+  const [isBrowseLoadingMore, setIsBrowseLoadingMore] = useState(false);
+
+  // ── Genre names lookup ──
+  const [genreNames, setGenreNames] = useState<Record<number, string>>({});
+
+  // ── Refs ──
   const searchIdRef = useRef(0);
+  const browseIdRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeTabRef = useRef(activeTab);
-
-  // Keep ref in sync
   activeTabRef.current = activeTab;
 
-  // Load recent searches from localStorage
+  // ── Derived mode ──
+  const isSearchMode = inputValue.trim().length > 0;
+  const hasActiveFilters = activeMood !== null || activeGenre !== null || activeDecade !== null || activeRating !== null || activeCollection !== null;
+  const isBrowseMode = !isSearchMode && hasActiveFilters;
+  const isExploreMode = !isSearchMode && !hasActiveFilters;
+
+  // ── Load recent searches ──
   useEffect(() => {
     try {
       const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
@@ -533,23 +490,27 @@ function SearchContent() {
     } catch { /* ignore */ }
   }, []);
 
-  // Load discover data (trending + popular)
+  // ── Load discover data + genre names ──
   useEffect(() => {
     setIsLoadingDiscover(true);
     Promise.all([
       getTrending(),
       getPopularMovies(),
       getPopularTV(),
-    ]).then(([trending, movies, tv]) => {
+      getMovieGenres(),
+    ]).then(([trending, movies, tv, genres]) => {
       setTrendingItems(trending.filter(i => i.media_type === 'movie' || i.media_type === 'tv'));
       setPopularMovies(movies.results);
       setPopularTV(tv.results);
+      const nameMap: Record<number, string> = {};
+      genres.forEach((g: TMDBGenre) => { nameMap[g.id] = g.name; });
+      setGenreNames(nameMap);
     }).finally(() => {
       setIsLoadingDiscover(false);
     });
   }, []);
 
-  // Auto-focus on desktop only
+  // ── Auto-focus on desktop only ──
   useEffect(() => {
     const isDesktop = window.matchMedia('(min-width: 768px)').matches;
     if (isDesktop && inputRef.current && !initialQuery) {
@@ -557,7 +518,29 @@ function SearchContent() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Execute search
+  // ── URL sync ──
+  const updateURL = useCallback((query: string, tab: TabType, filters?: {
+    mood?: string | null;
+    genre?: number | null;
+    decade?: string | null;
+    rating?: number | null;
+    sort?: string;
+    collection?: string | null;
+  }) => {
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (tab !== 'all') params.set('tab', tab);
+    if (filters?.mood) params.set('mood', filters.mood);
+    if (filters?.genre != null) params.set('genre', String(filters.genre));
+    if (filters?.decade) params.set('decade', filters.decade);
+    if (filters?.rating) params.set('rating', String(filters.rating));
+    if (filters?.sort && filters.sort !== 'popularity.desc') params.set('sort', filters.sort);
+    if (filters?.collection) params.set('collection', filters.collection);
+    const paramString = params.toString();
+    router.replace(`/search${paramString ? `?${paramString}` : ''}`, { scroll: false });
+  }, [router]);
+
+  // ── Execute search ──
   const executeSearch = useCallback(async (query: string, tab: TabType, page: number = 1, append: boolean = false) => {
     if (!query.trim()) return;
 
@@ -595,7 +578,6 @@ function SearchContent() {
         pages = data.total_pages;
       }
 
-      // Discard stale response
       if (currentSearchId !== searchIdRef.current) return;
 
       if (append) {
@@ -627,23 +609,168 @@ function SearchContent() {
     }
   }, []);
 
-  // Update URL params
-  const updateURL = useCallback((query: string, tab: TabType) => {
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    if (tab !== 'all') params.set('tab', tab);
-    const paramString = params.toString();
-    router.replace(`/search${paramString ? `?${paramString}` : ''}`, { scroll: false });
-  }, [router]);
+  // ── Execute browse (discover) ──
+  const executeBrowse = useCallback(async (
+    mood: string | null,
+    genre: number | null,
+    decade: string | null,
+    rating: number | null,
+    sort: string,
+    collection: CollectionConfig | null,
+    page: number = 1,
+    append: boolean = false,
+  ) => {
+    const currentBrowseId = ++browseIdRef.current;
 
-  // On mount: if URL has a query, execute search
+    if (append) {
+      setIsBrowseLoadingMore(true);
+    } else {
+      setIsBrowseLoading(true);
+      if (!append) setBrowseResults([]);
+    }
+
+    try {
+      // Start with collection params if active, otherwise empty
+      const movieParams: DiscoverParams = collection
+        ? { ...collection.discoverParams, page, sort_by: sort }
+        : { page, sort_by: sort };
+      const tvParams: DiscoverParams = collection
+        ? { ...collection.discoverParams, page, sort_by: sort }
+        : { page, sort_by: sort };
+
+      // Apply mood filters (mood's sortBy is overridden — user's sort always wins)
+      const moodConfig = mood ? MOODS.find(m => m.id === mood) : null;
+      if (moodConfig) {
+        const moodMovieParams = buildDiscoverParams(moodConfig, 'movie');
+        const moodTvParams = buildDiscoverParams(moodConfig, 'tv');
+        Object.assign(movieParams, moodMovieParams);
+        Object.assign(tvParams, moodTvParams);
+        movieParams.sort_by = sort;
+        tvParams.sort_by = sort;
+      }
+
+      // Apply genre filter (movie genres → TV mapped)
+      if (genre !== null) {
+        movieParams.with_genres = String(genre);
+        tvParams.with_genres = mapGenresToTV([genre]).join('|');
+      }
+
+      // Apply decade filter
+      const dateRange = decadeToDateRange(decade);
+      if (dateRange.gte) {
+        movieParams.dateGte = dateRange.gte;
+        tvParams.dateGte = dateRange.gte;
+      }
+      if (dateRange.lte) {
+        movieParams.dateLte = dateRange.lte;
+        tvParams.dateLte = dateRange.lte;
+      }
+
+      // Apply rating filter
+      if (rating) {
+        movieParams.voteAverageGte = rating;
+        tvParams.voteAverageGte = rating;
+      }
+
+      // Fetch both in parallel
+      const [movieData, tvData] = await Promise.all([
+        discoverMovies(movieParams),
+        discoverTV(tvParams),
+      ]);
+
+      if (currentBrowseId !== browseIdRef.current) return;
+
+      // Interleave results
+      const interleaved: TMDBMedia[] = [];
+      const maxLen = Math.max(movieData.results.length, tvData.results.length);
+      for (let i = 0; i < maxLen; i++) {
+        if (i < movieData.results.length) interleaved.push(movieData.results[i]);
+        if (i < tvData.results.length) interleaved.push(tvData.results[i]);
+      }
+
+      const maxPages = Math.max(movieData.total_pages, tvData.total_pages);
+
+      if (append) {
+        setBrowseResults(prev => {
+          const existingKeys = new Set(prev.map(m => `${m.media_type}-${m.id}`));
+          const unique = interleaved.filter(m => !existingKeys.has(`${m.media_type}-${m.id}`));
+          return [...prev, ...unique];
+        });
+      } else {
+        setBrowseResults(interleaved);
+      }
+
+      setBrowsePage(page);
+      setBrowseTotalPages(maxPages);
+    } catch (error) {
+      console.error('Browse error:', error);
+    } finally {
+      if (currentBrowseId === browseIdRef.current) {
+        setIsBrowseLoading(false);
+        setIsBrowseLoadingMore(false);
+      }
+    }
+  }, []);
+
+  // ── On mount: execute initial search or browse ──
   useEffect(() => {
+    const initCollection = initialCollection ? COLLECTIONS.find(c => c.id === initialCollection) || null : null;
     if (initialQuery) {
       executeSearch(initialQuery, initialTab);
+    } else if (initialMood || initialGenre !== null || initialDecade || initialRating || initCollection) {
+      executeBrowse(initialMood, initialGenre, initialDecade, initialRating, initialSort, initCollection);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Debounced search on input change
+  // ── Trigger browse when filters change ──
+  const handleFilterChange = useCallback((updates: {
+    mood?: string | null;
+    genre?: number | null;
+    decade?: string | null;
+    rating?: number | null;
+    sort?: string;
+    collection?: CollectionConfig | null;
+  }) => {
+    const newMood = updates.mood !== undefined ? updates.mood : activeMood;
+    let newGenre = updates.genre !== undefined ? updates.genre : activeGenre;
+    let newDecade = updates.decade !== undefined ? updates.decade : activeDecade;
+    const newRating = updates.rating !== undefined ? updates.rating : activeRating;
+    const newSort = updates.sort !== undefined ? updates.sort : activeSort;
+    let newCollection = updates.collection !== undefined ? updates.collection : activeCollection;
+
+    // Fix #5: Decade ↔ collection with date params conflict
+    if (updates.decade !== undefined && newCollection) {
+      const dp = newCollection.discoverParams;
+      if (dp.dateGte || dp.dateLte) {
+        newCollection = null;
+      }
+    }
+    if (updates.collection !== undefined && updates.collection) {
+      const dp = updates.collection.discoverParams;
+      if (dp.dateGte || dp.dateLte) {
+        newDecade = null;
+      }
+    }
+
+    if (updates.mood !== undefined) setActiveMood(updates.mood);
+    if (updates.genre !== undefined) setActiveGenre(updates.genre);
+    setActiveDecade(newDecade);
+    if (updates.rating !== undefined) setActiveRating(updates.rating);
+    if (updates.sort !== undefined) setActiveSort(updates.sort);
+    setActiveCollection(newCollection);
+
+    updateURL('', activeTab, {
+      mood: newMood, genre: newGenre, decade: newDecade, rating: newRating, sort: newSort,
+      collection: newCollection?.id || null,
+    });
+
+    const hasFilters = newMood !== null || newGenre !== null || newDecade !== null || newRating !== null || newCollection !== null;
+    if (hasFilters) {
+      executeBrowse(newMood, newGenre, newDecade, newRating, newSort, newCollection);
+    }
+  }, [activeMood, activeGenre, activeDecade, activeRating, activeSort, activeCollection, activeTab, updateURL, executeBrowse]);
+
+  // ── Input handlers ──
   const handleInputChange = (value: string) => {
     setInputValue(value);
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -652,7 +779,7 @@ function SearchContent() {
       setHasSearched(false);
       setMediaResults([]);
       setPersonResults([]);
-      updateURL('', activeTab);
+      updateURL('', activeTab, { mood: activeMood, genre: activeGenre, decade: activeDecade, rating: activeRating, sort: activeSort, collection: activeCollection?.id || null });
       return;
     }
 
@@ -662,7 +789,6 @@ function SearchContent() {
     }, 300);
   };
 
-  // Save to recent searches
   const saveRecentSearch = (query: string) => {
     const trimmed = query.trim();
     if (!trimmed) return;
@@ -674,7 +800,6 @@ function SearchContent() {
     });
   };
 
-  // Enter key handler
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -684,34 +809,27 @@ function SearchContent() {
         saveRecentSearch(query);
         updateURL(query, activeTab);
         executeSearch(query, activeTab);
-        if (window.innerWidth < 768) {
-          inputRef.current?.blur();
-        }
+        if (window.innerWidth < 768) inputRef.current?.blur();
       }
     }
   };
 
-  // Clear input
   const handleClear = () => {
     setInputValue('');
     setHasSearched(false);
     setMediaResults([]);
     setPersonResults([]);
-    updateURL('', activeTab);
+    updateURL('', activeTab, { mood: activeMood, genre: activeGenre, decade: activeDecade, rating: activeRating, sort: activeSort, collection: activeCollection?.id || null });
     inputRef.current?.focus();
   };
 
-  // Tab switch
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     const query = inputValue.trim();
     updateURL(query, tab);
-    if (query) {
-      executeSearch(query, tab);
-    }
+    if (query) executeSearch(query, tab);
   };
 
-  // Recent search click
   const handleRecentSearchClick = (query: string) => {
     setInputValue(query);
     setActiveTab('all');
@@ -720,7 +838,6 @@ function SearchContent() {
     saveRecentSearch(query);
   };
 
-  // Remove individual recent search
   const handleRemoveRecent = (query: string) => {
     setRecentSearches(prev => {
       const updated = prev.filter(s => s !== query);
@@ -729,24 +846,47 @@ function SearchContent() {
     });
   };
 
-  // Clear all recent searches
   const handleClearRecent = () => {
     setRecentSearches([]);
     try { localStorage.removeItem(RECENT_SEARCHES_KEY); } catch { /* ignore */ }
   };
 
-  // Infinite scroll with IntersectionObserver
+  const handleCollectionClick = (collection: CollectionConfig) => {
+    // Toggle: clicking active collection deselects it
+    const newCollection = activeCollection?.id === collection.id ? null : collection;
+    handleFilterChange({ collection: newCollection });
+  };
+
+  const handleClearAllFilters = () => {
+    setActiveMood(null);
+    setActiveGenre(null);
+    setActiveDecade(null);
+    setActiveRating(null);
+    setActiveSort('popularity.desc');
+    setActiveCollection(null);
+    setBrowseResults([]);
+    updateURL('', activeTab);
+  };
+
+  // ── Infinite scroll ──
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const entry = entries[0];
-        if (entry.isIntersecting && !isLoading && !isLoadingMore && currentPage < totalPages) {
-          const query = inputValue.trim();
-          if (query) {
-            executeSearch(query, activeTabRef.current, currentPage + 1, true);
+        if (!entries[0].isIntersecting) return;
+
+        if (isSearchMode) {
+          // Search mode infinite scroll
+          if (!isLoading && !isLoadingMore && currentPage < totalPages) {
+            const query = inputValue.trim();
+            if (query) executeSearch(query, activeTabRef.current, currentPage + 1, true);
+          }
+        } else if (isBrowseMode) {
+          // Browse mode infinite scroll
+          if (!isBrowseLoading && !isBrowseLoadingMore && browsePage < browseTotalPages) {
+            executeBrowse(activeMood, activeGenre, activeDecade, activeRating, activeSort, activeCollection, browsePage + 1, true);
           }
         }
       },
@@ -755,18 +895,21 @@ function SearchContent() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [currentPage, totalPages, isLoading, isLoadingMore, inputValue, executeSearch]);
+  }, [
+    isSearchMode, isBrowseMode,
+    currentPage, totalPages, isLoading, isLoadingMore, inputValue, executeSearch,
+    browsePage, browseTotalPages, isBrowseLoading, isBrowseLoadingMore, activeMood, activeGenre, activeDecade, activeRating, activeSort, activeCollection, executeBrowse,
+  ]);
 
-  const hasResults = mediaResults.length > 0 || personResults.length > 0;
-  const showEmptyState = !hasSearched && !isLoading && !inputValue.trim();
-  const showNoResults = hasSearched && !isLoading && !hasResults;
+  const hasSearchResults = mediaResults.length > 0 || personResults.length > 0;
+  const showNoResults = hasSearched && !isLoading && !hasSearchResults && isSearchMode;
 
   return (
     <div className="min-h-screen bg-page">
       <Header />
 
       <div className="max-w-[1400px] mx-auto px-6 lg:px-10 pt-6 pb-20">
-        {/* Search Bar — primary and only search bar on this page */}
+        {/* Search Bar */}
         <div className="max-w-2xl mx-auto lg:max-w-none mb-6">
           <div className="relative">
             <svg
@@ -798,8 +941,31 @@ function SearchContent() {
           </div>
         </div>
 
-        {/* Tabs */}
-        {(hasSearched || isLoading || inputValue.trim()) && (
+        {/* Filter rows (explore + browse modes only) */}
+        {!isSearchMode && (
+          <div className="space-y-4 mb-6">
+            <MoodPillsRow
+              activeMood={activeMood}
+              onMoodChange={(mood) => handleFilterChange({ mood })}
+            />
+            <GenreChipsRow
+              activeGenre={activeGenre}
+              onGenreChange={(genre) => handleFilterChange({ genre })}
+            />
+            <QuickFiltersRow
+              activeDecade={activeDecade}
+              activeRating={activeRating}
+              activeSort={activeSort}
+              onDecadeChange={(decade) => handleFilterChange({ decade })}
+              onRatingChange={(rating) => handleFilterChange({ rating })}
+              onSortChange={(sort) => handleFilterChange({ sort })}
+            />
+            <CollectionsRow activeCollectionId={activeCollection?.id} onCollectionClick={handleCollectionClick} />
+          </div>
+        )}
+
+        {/* Search mode: Tabs */}
+        {isSearchMode && (
           <div className="mb-6 border-b border-border-subtle overflow-x-auto scrollbar-hide">
             <div className="flex flex-nowrap">
               {TABS.map(({ key, label }) => (
@@ -819,65 +985,147 @@ function SearchContent() {
           </div>
         )}
 
-        {/* Content */}
-        {showEmptyState && (
-          <EmptyState
-            recentSearches={recentSearches}
-            trendingItems={trendingItems}
-            popularMovies={popularMovies}
-            popularTV={popularTV}
-            isLoadingDiscover={isLoadingDiscover}
-            onSearchClick={handleRecentSearchClick}
-            onRemoveRecent={handleRemoveRecent}
-            onClearRecent={handleClearRecent}
-          />
-        )}
-
-        {isLoading && !isLoadingMore && (
-          <SkeletonGrid type={activeTab === 'people' ? 'people' : 'media'} />
-        )}
-
-        {!isLoading && hasResults && (
+        {/* ═══════ EXPLORE MODE ═══════ */}
+        {isExploreMode && (
           <div className="space-y-8">
-            {/* Media results */}
-            {mediaResults.length > 0 && (
+            {/* Recent Searches */}
+            {recentSearches.length > 0 && (
               <section>
-                {activeTab === 'all' && personResults.length > 0 && (
-                  <h2 className="text-lg md:text-xl font-semibold text-primary mb-3">Movies & TV Shows</h2>
-                )}
-                <MediaResultsGrid results={mediaResults} />
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg md:text-xl font-semibold text-primary">Recent Searches</h2>
+                  <button
+                    onClick={handleClearRecent}
+                    className="text-xs text-search hover:underline min-h-[44px] flex items-center px-2"
+                  >
+                    Clear all
+                  </button>
+                </div>
+                <div className="space-y-0.5">
+                  {recentSearches.map((query) => (
+                    <div key={query} className="flex items-center group">
+                      <button
+                        onClick={() => handleRecentSearchClick(query)}
+                        className="flex-1 flex items-center gap-3 text-left py-2.5 px-3 rounded-lg hover:bg-surface transition-colors min-h-[44px]"
+                      >
+                        <svg className="w-4 h-4 text-tertiary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm text-primary truncate">{query}</span>
+                      </button>
+                      <button
+                        onClick={() => handleRemoveRecent(query)}
+                        className="p-2 text-tertiary hover:text-primary transition-colors opacity-0 group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        aria-label={`Remove "${query}" from recent searches`}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
 
-            {/* People results */}
-            {personResults.length > 0 && (
-              <section>
-                {activeTab === 'all' && mediaResults.length > 0 && (
-                  <h2 className="text-lg md:text-xl font-semibold text-primary mb-3">People</h2>
-                )}
-                <PeopleResultsGrid results={personResults} />
-              </section>
+            <ScrollRow key="trending" title="Trending Now" items={trendingItems.slice(0, 20)} isLoading={isLoadingDiscover && trendingItems.length === 0} speed={0.64} />
+            <ScrollRow key="popular-movies" title="Popular Movies" items={popularMovies.slice(0, 20)} isLoading={isLoadingDiscover && popularMovies.length === 0} speed={0.48} />
+            <ScrollRow key="popular-tv" title="Popular TV Shows" items={popularTV.slice(0, 20)} isLoading={isLoadingDiscover && popularTV.length === 0} speed={0.56} />
+          </div>
+        )}
+
+        {/* ═══════ BROWSE MODE ═══════ */}
+        {isBrowseMode && (
+          <div className="space-y-6">
+            <ActiveFiltersBar
+              activeMood={activeMood}
+              activeGenre={activeGenre}
+              activeDecade={activeDecade}
+              activeRating={activeRating}
+              activeCollectionTitle={activeCollection?.title || null}
+              genreNames={genreNames}
+              onRemoveMood={() => handleFilterChange({ mood: null })}
+              onRemoveGenre={() => handleFilterChange({ genre: null })}
+              onRemoveDecade={() => handleFilterChange({ decade: null })}
+              onRemoveRating={() => handleFilterChange({ rating: null })}
+              onRemoveCollection={() => handleFilterChange({ collection: null })}
+              onClearAll={handleClearAllFilters}
+            />
+
+            {isBrowseLoading && !isBrowseLoadingMore && (
+              <SkeletonGrid type="media" />
+            )}
+
+            {!isBrowseLoading && browseResults.length > 0 && (
+              <MediaResultsGrid results={browseResults} />
+            )}
+
+            {!isBrowseLoading && browseResults.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                <svg className="w-12 h-12 text-tertiary mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+                </svg>
+                <h3 className="text-lg font-semibold text-primary mb-2">No matches</h3>
+                <p className="text-secondary text-sm max-w-[400px]">
+                  Try adjusting your filters to find more titles.
+                </p>
+              </div>
+            )}
+
+            {isBrowseLoadingMore && (
+              <div className="mt-4">
+                <SkeletonGrid type="media" />
+              </div>
             )}
           </div>
         )}
 
-        {showNoResults && <NoResults query={inputValue} />}
+        {/* ═══════ SEARCH MODE ═══════ */}
+        {isSearchMode && (
+          <>
+            {isLoading && !isLoadingMore && (
+              <SkeletonGrid type={activeTab === 'people' ? 'people' : 'media'} />
+            )}
 
-        {/* Loading more skeleton row */}
-        {isLoadingMore && (
-          <div className="mt-4">
-            <SkeletonGrid type={activeTab === 'people' ? 'people' : 'media'} />
-          </div>
+            {!isLoading && hasSearchResults && (
+              <div className="space-y-8">
+                {mediaResults.length > 0 && (
+                  <section>
+                    {activeTab === 'all' && personResults.length > 0 && (
+                      <h2 className="text-lg md:text-xl font-semibold text-primary mb-3">Movies & TV Shows</h2>
+                    )}
+                    <MediaResultsGrid results={mediaResults} />
+                  </section>
+                )}
+                {personResults.length > 0 && (
+                  <section>
+                    {activeTab === 'all' && mediaResults.length > 0 && (
+                      <h2 className="text-lg md:text-xl font-semibold text-primary mb-3">People</h2>
+                    )}
+                    <PeopleResultsGrid results={personResults} />
+                  </section>
+                )}
+              </div>
+            )}
+
+            {showNoResults && <NoResults query={inputValue} />}
+
+            {isLoadingMore && (
+              <div className="mt-4">
+                <SkeletonGrid type={activeTab === 'people' ? 'people' : 'media'} />
+              </div>
+            )}
+          </>
         )}
 
         {/* Infinite scroll sentinel */}
         <div ref={sentinelRef} className="h-1" />
 
         {/* End of results indicator */}
-        {hasSearched && hasResults && currentPage >= totalPages && !isLoading && (
-          <p className="text-center text-tertiary text-sm py-8">
-            All results loaded
-          </p>
+        {isSearchMode && hasSearched && hasSearchResults && currentPage >= totalPages && !isLoading && (
+          <p className="text-center text-tertiary text-sm py-8">All results loaded</p>
+        )}
+        {isBrowseMode && browseResults.length > 0 && browsePage >= browseTotalPages && !isBrowseLoading && (
+          <p className="text-center text-tertiary text-sm py-8">All results loaded</p>
         )}
       </div>
     </div>

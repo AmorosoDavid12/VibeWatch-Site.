@@ -1,17 +1,21 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../utils/auth-provider';
 import { supabase } from '../utils/supabase';
 import { getWatchlist } from '../utils/watchlist';
+import { searchMulti, getImageUrl, getTitle, getYear, type TMDBMedia, type TMDBPerson } from '../utils/tmdb-api';
+import { MOODS } from '../config/moods';
 
 interface UserProfile {
   username: string;
   avatar_url: string | null;
 }
+
+const HEADER_MOOD_HINTS = MOODS.slice(0, 4);
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -23,14 +27,29 @@ const Header = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [watchlistCount, setWatchlistCount] = useState(0);
-  const [headerSearchQuery, setHeaderSearchQuery] = useState('');
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Search dropdown state
+  const [headerSearchQuery, setHeaderSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [instantResults, setInstantResults] = useState<{
+    movies: TMDBMedia[];
+    tv: TMDBMedia[];
+    people: TMDBPerson[];
+  } | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Close user dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setSearchFocused(false);
       }
     };
 
@@ -40,8 +59,16 @@ const Header = () => {
     };
   }, []);
 
+  // Close search popover on Escape
   useEffect(() => {
-    // Try to get profile from localStorage first to prevent flashing
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSearchFocused(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
     const cachedProfile = localStorage.getItem('userProfile');
     if (cachedProfile) {
       try {
@@ -122,12 +149,52 @@ const Header = () => {
     setIsDropdownOpen(prev => !prev);
   };
 
+  // Header instant search
+  const handleHeaderSearchChange = useCallback((value: string) => {
+    setHeaderSearchQuery(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+
+    if (!value.trim()) {
+      setInstantResults(null);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const data = await searchMulti(value.trim(), 1);
+        const movies = data.results.filter(r => r.media_type === 'movie').slice(0, 3);
+        const tv = data.results.filter(r => r.media_type === 'tv').slice(0, 3);
+        const people = (data.person_results || []).slice(0, 2);
+        setInstantResults({ movies, tv, people });
+      } catch {
+        setInstantResults(null);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+  }, []);
+
   const handleSearchSubmit = () => {
     if (headerSearchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(headerSearchQuery.trim())}&tab=all`);
       setHeaderSearchQuery('');
+      setSearchFocused(false);
+      setInstantResults(null);
     }
   };
+
+  const handleMoodClick = (moodId: string) => {
+    router.push(`/search?mood=${moodId}`);
+    setSearchFocused(false);
+    setHeaderSearchQuery('');
+    setInstantResults(null);
+  };
+
+  const showPopover = searchFocused && !isSearchPage;
+  const showExplorePopover = showPopover && !headerSearchQuery.trim();
+  const showResultsPopover = showPopover && headerSearchQuery.trim().length > 0;
 
   const displayName = profile?.username
     ? profile.username.split('#')[0]
@@ -143,7 +210,7 @@ const Header = () => {
 
         {/* Desktop search — hidden on /search page */}
         {!isSearchPage && (
-          <div className="hidden md:flex flex-1 max-w-xl mx-4">
+          <div className="hidden md:flex flex-1 max-w-xl mx-4" ref={searchContainerRef}>
             <div className="relative w-full">
               <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary pointer-events-none"
@@ -154,13 +221,199 @@ const Header = () => {
               <input
                 type="text"
                 value={headerSearchQuery}
-                onChange={(e) => setHeaderSearchQuery(e.target.value)}
+                onChange={(e) => handleHeaderSearchChange(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSearchSubmit();
                 }}
                 placeholder="Search movies, TV shows, people..."
                 className="w-full h-9 pl-9 pr-3 bg-input border border-border-default rounded-lg text-primary text-sm placeholder:text-tertiary transition-colors focus:outline-none focus:border-search"
               />
+
+              {/* Explore popover (empty input, focused) */}
+              {showExplorePopover && (
+                <div className="search-popover p-4">
+                  <Link
+                    href="/search"
+                    className="flex items-center justify-between text-sm text-primary mb-4 group"
+                    onClick={() => setSearchFocused(false)}
+                  >
+                    <span>Not sure what to watch?</span>
+                    <span className="text-search text-xs font-medium group-hover:underline">
+                      Explore &rarr;
+                    </span>
+                  </Link>
+                  <p className="text-xs text-tertiary font-medium uppercase tracking-wider mb-2">
+                    Try a mood
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {HEADER_MOOD_HINTS.map((mood) => (
+                      <button
+                        key={mood.id}
+                        onClick={() => handleMoodClick(mood.id)}
+                        className="chip chip-mood text-xs"
+                        style={{ '--mood-color': mood.color } as React.CSSProperties}
+                      >
+                        {mood.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Results popover (typing) */}
+              {showResultsPopover && (
+                <div className="search-popover py-2">
+                  {isSearching && !instantResults && (
+                    <div className="px-4 py-6 text-center text-sm text-tertiary">
+                      Searching...
+                    </div>
+                  )}
+
+                  {instantResults && (
+                    <>
+                      {/* Movies */}
+                      {instantResults.movies.length > 0 && (
+                        <div className="mb-1">
+                          <p className="px-4 py-1.5 text-[11px] font-semibold text-tertiary uppercase tracking-wider">
+                            Movies
+                          </p>
+                          {instantResults.movies.map((item) => (
+                            <Link
+                              key={item.id}
+                              href={`/title?id=${item.id}&type=movie`}
+                              className="flex items-center gap-3 px-4 py-2 hover:bg-overlay transition-colors"
+                              onClick={() => { setSearchFocused(false); setHeaderSearchQuery(''); setInstantResults(null); }}
+                            >
+                              <div className="w-8 h-12 rounded overflow-hidden bg-elevated flex-shrink-0">
+                                {item.poster_path ? (
+                                  <Image
+                                    src={getImageUrl(item.poster_path, 'w92')}
+                                    alt={getTitle(item)}
+                                    width={32}
+                                    height={48}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-primary truncate">{getTitle(item)}</p>
+                                <p className="text-xs text-tertiary">{getYear(item)}</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* TV Shows */}
+                      {instantResults.tv.length > 0 && (
+                        <div className="mb-1">
+                          <p className="px-4 py-1.5 text-[11px] font-semibold text-tertiary uppercase tracking-wider">
+                            TV Shows
+                          </p>
+                          {instantResults.tv.map((item) => (
+                            <Link
+                              key={item.id}
+                              href={`/title?id=${item.id}&type=tv`}
+                              className="flex items-center gap-3 px-4 py-2 hover:bg-overlay transition-colors"
+                              onClick={() => { setSearchFocused(false); setHeaderSearchQuery(''); setInstantResults(null); }}
+                            >
+                              <div className="w-8 h-12 rounded overflow-hidden bg-elevated flex-shrink-0">
+                                {item.poster_path ? (
+                                  <Image
+                                    src={getImageUrl(item.poster_path, 'w92')}
+                                    alt={getTitle(item)}
+                                    width={32}
+                                    height={48}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-primary truncate">{getTitle(item)}</p>
+                                <p className="text-xs text-tertiary">{getYear(item)}</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* People */}
+                      {instantResults.people.length > 0 && (
+                        <div className="mb-1">
+                          <p className="px-4 py-1.5 text-[11px] font-semibold text-tertiary uppercase tracking-wider">
+                            People
+                          </p>
+                          {instantResults.people.map((person) => (
+                            <Link
+                              key={person.id}
+                              href={`/person?id=${person.id}`}
+                              className="flex items-center gap-3 px-4 py-2 hover:bg-overlay transition-colors"
+                              onClick={() => { setSearchFocused(false); setHeaderSearchQuery(''); setInstantResults(null); }}
+                            >
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-elevated flex-shrink-0">
+                                {person.profile_path ? (
+                                  <Image
+                                    src={getImageUrl(person.profile_path, 'w92')}
+                                    alt={person.name}
+                                    width={32}
+                                    height={32}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-primary truncate">{person.name}</p>
+                                <p className="text-xs text-tertiary">{person.known_for_department}</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* No results */}
+                      {instantResults.movies.length === 0 && instantResults.tv.length === 0 && instantResults.people.length === 0 && !isSearching && (
+                        <div className="px-4 py-6 text-center text-sm text-tertiary">
+                          No results found
+                        </div>
+                      )}
+
+                      {/* See all results footer */}
+                      {(instantResults.movies.length > 0 || instantResults.tv.length > 0 || instantResults.people.length > 0) && (
+                        <>
+                          <div className="border-t border-border-subtle mx-3 my-1" />
+                          <Link
+                            href={`/search?q=${encodeURIComponent(headerSearchQuery.trim())}&tab=all`}
+                            className="flex items-center justify-between px-4 py-2.5 text-sm text-search hover:bg-overlay transition-colors"
+                            onClick={() => { setSearchFocused(false); setHeaderSearchQuery(''); setInstantResults(null); }}
+                          >
+                            <span>See all results for &quot;{headerSearchQuery.trim()}&quot;</span>
+                            <span>&rarr;</span>
+                          </Link>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
