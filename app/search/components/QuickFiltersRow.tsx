@@ -2,6 +2,14 @@
 
 import { useDragScroll } from '../hooks/useDragScroll';
 
+export type MediaType = 'all' | 'movies' | 'tv';
+
+const MEDIA_TYPES: { label: string; value: MediaType }[] = [
+  { label: 'All', value: 'all' },
+  { label: 'Movies', value: 'movies' },
+  { label: 'TV Shows', value: 'tv' },
+];
+
 const DECADES = [
   { label: 'All', value: null },
   { label: "'70s", value: '1970s' },
@@ -25,33 +33,59 @@ const SORTS = [
 ];
 
 interface QuickFiltersRowProps {
+  activeMediaType: MediaType;
   activeDecade: string | null;
   activeRating: number | null;
   activeSort: string;
+  onMediaTypeChange: (type: MediaType) => void;
   onDecadeChange: (decade: string | null) => void;
   onRatingChange: (rating: number | null) => void;
   onSortChange: (sort: string) => void;
 }
 
 export default function QuickFiltersRow({
+  activeMediaType,
   activeDecade,
   activeRating,
   activeSort,
+  onMediaTypeChange,
   onDecadeChange,
   onRatingChange,
   onSortChange,
 }: QuickFiltersRowProps) {
+  const media = useDragScroll();
   const decade = useDragScroll();
   const rating = useDragScroll();
   const sort = useDragScroll();
 
   return (
-    <div className="flex flex-wrap gap-x-6 gap-y-3">
-      {/* Decade filter */}
-      <div className="flex-shrink-0">
-        <p className="filter-label">Decade</p>
+    <div className="flex flex-wrap gap-x-4 gap-y-2">
+      {/* Media type filter */}
+      <div className="flex-shrink-0 min-w-0 w-full md:w-auto">
+        <p className="filter-label mb-1.5">Type</p>
         <div
-          className="filter-row"
+          className="filter-row gap-1.5"
+          ref={media.ref}
+          onPointerDown={media.onPointerDown}
+          onClickCapture={media.onClickCapture}
+        >
+          {MEDIA_TYPES.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => onMediaTypeChange(t.value)}
+              className={`chip chip-sm ${activeMediaType === t.value ? 'chip-active' : ''}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Decade filter */}
+      <div className="flex-shrink-0 min-w-0 w-full md:w-auto">
+        <p className="filter-label mb-1.5">Decade</p>
+        <div
+          className="filter-row gap-1.5"
           ref={decade.ref}
           onPointerDown={decade.onPointerDown}
           onClickCapture={decade.onClickCapture}
@@ -60,7 +94,7 @@ export default function QuickFiltersRow({
             <button
               key={d.label}
               onClick={() => onDecadeChange(activeDecade === d.value ? null : d.value)}
-              className={`chip ${(d.value === null ? activeDecade === null : activeDecade === d.value) ? 'chip-active' : ''}`}
+              className={`chip chip-sm ${(d.value === null ? activeDecade === null : activeDecade === d.value) ? 'chip-active' : ''}`}
             >
               {d.label}
             </button>
@@ -69,10 +103,10 @@ export default function QuickFiltersRow({
       </div>
 
       {/* Rating filter */}
-      <div className="flex-shrink-0">
-        <p className="filter-label">Rating</p>
+      <div className="flex-shrink-0 min-w-0 w-full md:w-auto">
+        <p className="filter-label mb-1.5">Rating</p>
         <div
-          className="filter-row"
+          className="filter-row gap-1.5"
           ref={rating.ref}
           onPointerDown={rating.onPointerDown}
           onClickCapture={rating.onClickCapture}
@@ -81,7 +115,7 @@ export default function QuickFiltersRow({
             <button
               key={r.value}
               onClick={() => onRatingChange(activeRating === r.value ? null : r.value)}
-              className={`chip ${activeRating === r.value ? 'chip-active' : ''}`}
+              className={`chip chip-sm ${activeRating === r.value ? 'chip-active' : ''}`}
             >
               {r.label}
             </button>
@@ -90,10 +124,10 @@ export default function QuickFiltersRow({
       </div>
 
       {/* Sort */}
-      <div className="flex-shrink-0">
-        <p className="filter-label">Sort by</p>
+      <div className="flex-shrink-0 min-w-0 w-full md:w-auto">
+        <p className="filter-label mb-1.5">Sort by</p>
         <div
-          className="filter-row"
+          className="filter-row gap-1.5"
           ref={sort.ref}
           onPointerDown={sort.onPointerDown}
           onClickCapture={sort.onClickCapture}
@@ -102,7 +136,7 @@ export default function QuickFiltersRow({
             <button
               key={s.value}
               onClick={() => onSortChange(s.value)}
-              className={`chip ${activeSort === s.value ? 'chip-active' : ''}`}
+              className={`chip chip-sm ${activeSort === s.value ? 'chip-active' : ''}`}
             >
               {s.label}
             </button>

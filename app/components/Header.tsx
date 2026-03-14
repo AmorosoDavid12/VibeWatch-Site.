@@ -7,8 +7,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../utils/auth-provider';
 import { supabase } from '../utils/supabase';
 import { getWatchlist } from '../utils/watchlist';
-import { searchMulti, getImageUrl, getTitle, getYear, type TMDBMedia, type TMDBPerson } from '../utils/tmdb-api';
+import { searchMulti, getTrending, getImageUrl, getTitle, getYear, type TMDBMedia, type TMDBPerson } from '../utils/tmdb-api';
+import { Compass, TrendUp, MagnifyingGlass, ArrowRight } from '@phosphor-icons/react';
 import { MOODS } from '../config/moods';
+import { MOOD_ICON_MAP } from '../config/mood-icons';
 
 interface UserProfile {
   username: string;
@@ -37,6 +39,7 @@ const Header = () => {
     people: TMDBPerson[];
   } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [trendingTitles, setTrendingTitles] = useState<string[]>([]);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -57,6 +60,20 @@ const Header = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, []);
+
+  // Fetch trending titles for search dropdown (once)
+  useEffect(() => {
+    let cancelled = false;
+    getTrending().then((items) => {
+      if (cancelled) return;
+      const titles = items
+        .map((item) => getTitle(item))
+        .filter((t) => t.length > 0)
+        .slice(0, 5);
+      setTrendingTitles(titles);
+    }).catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   // Close search popover on Escape
@@ -212,12 +229,10 @@ const Header = () => {
         {!isSearchPage && (
           <div className="hidden md:flex flex-1 max-w-xl mx-4" ref={searchContainerRef}>
             <div className="relative w-full">
-              <svg
+              <MagnifyingGlass
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary pointer-events-none"
-                fill="none" viewBox="0 0 24 24" stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+                weight="bold"
+              />
               <input
                 type="text"
                 value={headerSearchQuery}
@@ -232,31 +247,69 @@ const Header = () => {
 
               {/* Explore popover (empty input, focused) */}
               {showExplorePopover && (
-                <div className="search-popover p-4">
+                <div className="search-popover py-2">
+                  {/* Explore CTA */}
                   <Link
                     href="/search"
-                    className="flex items-center justify-between text-sm text-primary mb-4 group"
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-overlay transition-colors group"
                     onClick={() => setSearchFocused(false)}
                   >
-                    <span>Not sure what to watch?</span>
-                    <span className="text-search text-xs font-medium group-hover:underline">
-                      Explore &rarr;
-                    </span>
+                    <Compass className="w-5 h-5 text-search flex-shrink-0" weight="duotone" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-primary">Explore & Discover</p>
+                      <p className="text-xs text-tertiary">Browse movies, shows, collections & more</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-tertiary group-hover:text-secondary group-hover:translate-x-0.5 transition-all duration-150 flex-shrink-0" />
                   </Link>
-                  <p className="text-xs text-tertiary font-medium uppercase tracking-wider mb-2">
-                    Try a mood
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {HEADER_MOOD_HINTS.map((mood) => (
-                      <button
-                        key={mood.id}
-                        onClick={() => handleMoodClick(mood.id)}
-                        className="chip chip-mood text-xs"
-                        style={{ '--mood-color': mood.color } as React.CSSProperties}
-                      >
-                        {mood.label}
-                      </button>
-                    ))}
+
+                  <div className="border-t border-border-subtle mx-3 my-1.5" />
+
+                  {/* Trending searches */}
+                  {trendingTitles.length > 0 && (
+                    <div className="px-4 py-2">
+                      <p className="text-[11px] font-semibold text-tertiary uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <TrendUp className="w-3.5 h-3.5" weight="bold" />
+                        Trending now
+                      </p>
+                      <div className="flex flex-col gap-0.5">
+                        {trendingTitles.map((title) => (
+                          <Link
+                            key={title}
+                            href={`/search?q=${encodeURIComponent(title)}&tab=all`}
+                            onClick={() => { setSearchFocused(false); setHeaderSearchQuery(''); setInstantResults(null); }}
+                            className="flex items-center gap-2.5 py-1.5 text-sm text-secondary hover:text-primary transition-colors text-left"
+                          >
+                            <MagnifyingGlass className="w-3.5 h-3.5 text-tertiary flex-shrink-0" />
+                            <span className="truncate">{title}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="border-t border-border-subtle mx-3 my-1.5" />
+
+                  {/* Mood pills */}
+                  <div className="px-4 py-2">
+                    <p className="text-[11px] font-semibold text-tertiary uppercase tracking-wider mb-2">
+                      Try a mood
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {HEADER_MOOD_HINTS.map((mood) => {
+                        const MoodIcon = MOOD_ICON_MAP[mood.icon];
+                        return (
+                          <button
+                            key={mood.id}
+                            onClick={() => handleMoodClick(mood.id)}
+                            className="chip chip-mood text-xs"
+                            style={{ '--mood-color': mood.color } as React.CSSProperties}
+                          >
+                            {MoodIcon && <MoodIcon size={14} weight="duotone" style={{ color: mood.color }} />}
+                            {mood.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
@@ -430,16 +483,27 @@ const Header = () => {
               className="md:hidden flex items-center justify-center w-11 h-11 rounded-lg text-secondary transition-colors hover:text-primary"
               aria-label="Search"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <MagnifyingGlass className="w-5 h-5" weight="bold" />
             </Link>
           )}
+
+          {/* Explore */}
+          <Link
+            href="/search"
+            className={`flex items-center gap-1.5 h-11 px-2 md:px-3 rounded-lg transition-colors ${
+              isSearchPage ? 'text-primary' : 'text-secondary hover:text-primary'
+            }`}
+          >
+            <Compass className="w-5 h-5 flex-shrink-0" weight={isSearchPage ? 'fill' : 'regular'} />
+            <span className="hidden md:inline text-sm">Explore</span>
+          </Link>
 
           {/* Watchlist */}
           <Link
             href="/watchlist"
-            className="flex items-center gap-1.5 h-11 px-2 md:px-3 rounded-lg text-secondary transition-colors hover:text-primary"
+            className={`flex items-center gap-1.5 h-11 px-2 md:px-3 rounded-lg transition-colors ${
+              pathname === '/watchlist' ? 'text-primary' : 'text-secondary hover:text-primary'
+            }`}
           >
             <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />

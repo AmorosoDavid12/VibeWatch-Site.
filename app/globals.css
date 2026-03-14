@@ -224,6 +224,13 @@ body {
   }
 }
 
+.chip-sm {
+  min-height: 32px;
+  padding: 0 11px;
+  font-size: 12px;
+  gap: 4px;
+}
+
 .chip-active {
   background: var(--accent-muted);
   border-color: var(--accent);
@@ -340,6 +347,28 @@ body {
   max-height: 480px;
   overflow-y: auto;
   animation: fadeIn 200ms var(--ease-out);
+}
+
+/* ===== COLLAPSIBLE FILTER PANEL (mobile) ===== */
+.filter-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 300ms var(--ease-default);
+}
+
+.filter-collapse > .filter-collapse-inner {
+  overflow: hidden;
+}
+
+.filter-collapse.filter-collapse-open {
+  grid-template-rows: 1fr;
+}
+
+/* md+ always expanded */
+@media (min-width: 768px) {
+  .filter-collapse {
+    grid-template-rows: 1fr !important;
+  }
 }
 
 /* ===== FILTER SECTION LABEL ===== */

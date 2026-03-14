@@ -1,6 +1,7 @@
 'use client';
 
 import { MOODS } from '../../config/moods';
+import { MOOD_ICON_MAP } from '../../config/mood-icons';
 
 interface ActiveFiltersBarProps {
   activeMood: string | null;
@@ -53,6 +54,7 @@ export default function ActiveFiltersBar({
 
       {moodConfig && (
         <button onClick={onRemoveMood} className="chip chip-active chip-removable text-xs">
+          {(() => { const MoodIcon = MOOD_ICON_MAP[moodConfig.icon]; return MoodIcon ? <MoodIcon size={14} weight="fill" /> : null; })()}
           {moodConfig.label}
           <span className="chip-x">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

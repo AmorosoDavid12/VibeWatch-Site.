@@ -10,11 +10,12 @@ import AutoScroll from 'embla-carousel-auto-scroll';
 import Header from '../components/Header';
 import MoodPillsRow from './components/MoodPillsRow';
 import GenreChipsRow from './components/GenreChipsRow';
-import QuickFiltersRow, { decadeToDateRange } from './components/QuickFiltersRow';
+import QuickFiltersRow, { decadeToDateRange, type MediaType } from './components/QuickFiltersRow';
 import CollectionsRow from './components/CollectionsRow';
 import ActiveFiltersBar from './components/ActiveFiltersBar';
 import { MOODS, buildDiscoverParams } from '../config/moods';
 import { COLLECTIONS, type CollectionConfig } from '../config/collections';
+import { FunnelSimple, CaretDown } from '@phosphor-icons/react';
 import {
   searchMulti,
   searchMovies,
@@ -427,6 +428,7 @@ function SearchContent() {
   const initialDecade = searchParams.get('decade') || null;
   const initialRating = searchParams.get('rating') ? Number(searchParams.get('rating')) : null;
   const initialSort = searchParams.get('sort') || 'popularity.desc';
+  const initialMediaType = (searchParams.get('type') as MediaType) || 'all';
   const initialCollection = searchParams.get('collection') || null;
 
   // ── Search state ──
@@ -453,8 +455,13 @@ function SearchContent() {
   const [activeDecade, setActiveDecade] = useState<string | null>(initialDecade);
   const [activeRating, setActiveRating] = useState<number | null>(initialRating);
   const [activeSort, setActiveSort] = useState(initialSort);
+  const [activeMediaType, setActiveMediaType] = useState<MediaType>(initialMediaType);
   const [activeCollection, setActiveCollection] = useState<CollectionConfig | null>(
     initialCollection ? COLLECTIONS.find(c => c.id === initialCollection) || null : null
+  );
+  const [filtersExpanded, setFiltersExpanded] = useState(
+    initialGenre !== null || initialDecade !== null || initialRating !== null ||
+    initialSort !== 'popularity.desc' || initialMediaType !== 'all'
   );
 
   // ── Browse state ──
@@ -525,6 +532,7 @@ function SearchContent() {
     decade?: string | null;
     rating?: number | null;
     sort?: string;
+    mediaType?: MediaType;
     collection?: string | null;
   }) => {
     const params = new URLSearchParams();
@@ -535,6 +543,7 @@ function SearchContent() {
     if (filters?.decade) params.set('decade', filters.decade);
     if (filters?.rating) params.set('rating', String(filters.rating));
     if (filters?.sort && filters.sort !== 'popularity.desc') params.set('sort', filters.sort);
+    if (filters?.mediaType && filters.mediaType !== 'all') params.set('type', filters.mediaType);
     if (filters?.collection) params.set('collection', filters.collection);
     const paramString = params.toString();
     router.replace(`/search${paramString ? `?${paramString}` : ''}`, { scroll: false });
@@ -619,6 +628,7 @@ function SearchContent() {
     collection: CollectionConfig | null,
     page: number = 1,
     append: boolean = false,
+    mediaType: MediaType = 'all',
   ) => {
     const currentBrowseId = ++browseIdRef.current;
 
@@ -672,15 +682,18 @@ function SearchContent() {
         tvParams.voteAverageGte = rating;
       }
 
-      // Fetch both in parallel
+      // Fetch based on media type filter
+      const fetchMovies = mediaType !== 'tv';
+      const fetchTV = mediaType !== 'movies';
+
       const [movieData, tvData] = await Promise.all([
-        discoverMovies(movieParams),
-        discoverTV(tvParams),
+        fetchMovies ? discoverMovies(movieParams) : Promise.resolve({ results: [], total_pages: 0 }),
+        fetchTV ? discoverTV(tvParams) : Promise.resolve({ results: [], total_pages: 0 }),
       ]);
 
       if (currentBrowseId !== browseIdRef.current) return;
 
-      // Interleave results
+      // Interleave results (or just one type if filtered)
       const interleaved: TMDBMedia[] = [];
       const maxLen = Math.max(movieData.results.length, tvData.results.length);
       for (let i = 0; i < maxLen; i++) {
@@ -718,7 +731,7 @@ function SearchContent() {
     if (initialQuery) {
       executeSearch(initialQuery, initialTab);
     } else if (initialMood || initialGenre !== null || initialDecade || initialRating || initCollection) {
-      executeBrowse(initialMood, initialGenre, initialDecade, initialRating, initialSort, initCollection);
+      executeBrowse(initialMood, initialGenre, initialDecade, initialRating, initialSort, initCollection, 1, false, initialMediaType);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -729,6 +742,7 @@ function SearchContent() {
     decade?: string | null;
     rating?: number | null;
     sort?: string;
+    mediaType?: MediaType;
     collection?: CollectionConfig | null;
   }) => {
     const newMood = updates.mood !== undefined ? updates.mood : activeMood;
@@ -736,6 +750,7 @@ function SearchContent() {
     let newDecade = updates.decade !== undefined ? updates.decade : activeDecade;
     const newRating = updates.rating !== undefined ? updates.rating : activeRating;
     const newSort = updates.sort !== undefined ? updates.sort : activeSort;
+    const newMediaType = updates.mediaType !== undefined ? updates.mediaType : activeMediaType;
     let newCollection = updates.collection !== undefined ? updates.collection : activeCollection;
 
     // Fix #5: Decade ↔ collection with date params conflict
@@ -757,18 +772,19 @@ function SearchContent() {
     setActiveDecade(newDecade);
     if (updates.rating !== undefined) setActiveRating(updates.rating);
     if (updates.sort !== undefined) setActiveSort(updates.sort);
+    if (updates.mediaType !== undefined) setActiveMediaType(updates.mediaType);
     setActiveCollection(newCollection);
 
     updateURL('', activeTab, {
       mood: newMood, genre: newGenre, decade: newDecade, rating: newRating, sort: newSort,
-      collection: newCollection?.id || null,
+      mediaType: newMediaType, collection: newCollection?.id || null,
     });
 
     const hasFilters = newMood !== null || newGenre !== null || newDecade !== null || newRating !== null || newCollection !== null;
     if (hasFilters) {
-      executeBrowse(newMood, newGenre, newDecade, newRating, newSort, newCollection);
+      executeBrowse(newMood, newGenre, newDecade, newRating, newSort, newCollection, 1, false, newMediaType);
     }
-  }, [activeMood, activeGenre, activeDecade, activeRating, activeSort, activeCollection, activeTab, updateURL, executeBrowse]);
+  }, [activeMood, activeGenre, activeDecade, activeRating, activeSort, activeMediaType, activeCollection, activeTab, updateURL, executeBrowse]);
 
   // ── Input handlers ──
   const handleInputChange = (value: string) => {
@@ -779,7 +795,7 @@ function SearchContent() {
       setHasSearched(false);
       setMediaResults([]);
       setPersonResults([]);
-      updateURL('', activeTab, { mood: activeMood, genre: activeGenre, decade: activeDecade, rating: activeRating, sort: activeSort, collection: activeCollection?.id || null });
+      updateURL('', activeTab, { mood: activeMood, genre: activeGenre, decade: activeDecade, rating: activeRating, sort: activeSort, mediaType: activeMediaType, collection: activeCollection?.id || null });
       return;
     }
 
@@ -819,7 +835,7 @@ function SearchContent() {
     setHasSearched(false);
     setMediaResults([]);
     setPersonResults([]);
-    updateURL('', activeTab, { mood: activeMood, genre: activeGenre, decade: activeDecade, rating: activeRating, sort: activeSort, collection: activeCollection?.id || null });
+    updateURL('', activeTab, { mood: activeMood, genre: activeGenre, decade: activeDecade, rating: activeRating, sort: activeSort, mediaType: activeMediaType, collection: activeCollection?.id || null });
     inputRef.current?.focus();
   };
 
@@ -863,6 +879,7 @@ function SearchContent() {
     setActiveDecade(null);
     setActiveRating(null);
     setActiveSort('popularity.desc');
+    setActiveMediaType('all');
     setActiveCollection(null);
     setBrowseResults([]);
     updateURL('', activeTab);
@@ -886,7 +903,7 @@ function SearchContent() {
         } else if (isBrowseMode) {
           // Browse mode infinite scroll
           if (!isBrowseLoading && !isBrowseLoadingMore && browsePage < browseTotalPages) {
-            executeBrowse(activeMood, activeGenre, activeDecade, activeRating, activeSort, activeCollection, browsePage + 1, true);
+            executeBrowse(activeMood, activeGenre, activeDecade, activeRating, activeSort, activeCollection, browsePage + 1, true, activeMediaType);
           }
         }
       },
@@ -908,7 +925,7 @@ function SearchContent() {
     <div className="min-h-screen bg-page">
       <Header />
 
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-10 pt-6 pb-20">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-10 pt-6 pb-20">
         {/* Search Bar */}
         <div className="max-w-2xl mx-auto lg:max-w-none mb-6">
           <div className="relative">
@@ -942,27 +959,69 @@ function SearchContent() {
         </div>
 
         {/* Filter rows (explore + browse modes only) */}
-        {!isSearchMode && (
-          <div className="space-y-4 mb-6">
-            <MoodPillsRow
-              activeMood={activeMood}
-              onMoodChange={(mood) => handleFilterChange({ mood })}
-            />
-            <GenreChipsRow
-              activeGenre={activeGenre}
-              onGenreChange={(genre) => handleFilterChange({ genre })}
-            />
-            <QuickFiltersRow
-              activeDecade={activeDecade}
-              activeRating={activeRating}
-              activeSort={activeSort}
-              onDecadeChange={(decade) => handleFilterChange({ decade })}
-              onRatingChange={(rating) => handleFilterChange({ rating })}
-              onSortChange={(sort) => handleFilterChange({ sort })}
-            />
-            <CollectionsRow activeCollectionId={activeCollection?.id} onCollectionClick={handleCollectionClick} />
-          </div>
-        )}
+        {!isSearchMode && (() => {
+          const quickFilterCount =
+            (activeGenre !== null ? 1 : 0) +
+            (activeDecade !== null ? 1 : 0) +
+            (activeRating !== null ? 1 : 0) +
+            (activeSort !== 'popularity.desc' ? 1 : 0) +
+            (activeMediaType !== 'all' ? 1 : 0);
+
+          return (
+            <div className="space-y-4 mb-6">
+              {/* Mood pills — always visible (vibe-first identity) */}
+              <MoodPillsRow
+                activeMood={activeMood}
+                onMoodChange={(mood) => handleFilterChange({ mood })}
+              />
+
+              {/* Collections — moved up for visual engagement */}
+              <CollectionsRow activeCollectionId={activeCollection?.id} onCollectionClick={handleCollectionClick} />
+
+              {/* Toggle button — mobile only */}
+              <button
+                onClick={() => setFiltersExpanded(prev => !prev)}
+                className="md:hidden w-full flex items-center justify-between py-2.5 px-4 bg-surface border border-border-subtle rounded-lg text-sm text-secondary active:bg-elevated transition-colors min-h-[44px]"
+              >
+                <span className="flex items-center gap-2">
+                  <FunnelSimple size={16} weight="bold" />
+                  Genres & Filters
+                  {quickFilterCount > 0 && (
+                    <span className="bg-accent text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
+                      {quickFilterCount}
+                    </span>
+                  )}
+                </span>
+                <CaretDown
+                  size={16}
+                  className={`transition-transform duration-200 ${filtersExpanded ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {/* Collapsible section: Genres + QuickFilters */}
+              <div className={`filter-collapse ${filtersExpanded ? 'filter-collapse-open' : ''}`}>
+                <div className="filter-collapse-inner">
+                  <div className="space-y-4">
+                    <GenreChipsRow
+                      activeGenre={activeGenre}
+                      onGenreChange={(genre) => handleFilterChange({ genre })}
+                    />
+                    <QuickFiltersRow
+                      activeMediaType={activeMediaType}
+                      activeDecade={activeDecade}
+                      activeRating={activeRating}
+                      activeSort={activeSort}
+                      onMediaTypeChange={(mediaType) => handleFilterChange({ mediaType })}
+                      onDecadeChange={(decade) => handleFilterChange({ decade })}
+                      onRatingChange={(rating) => handleFilterChange({ rating })}
+                      onSortChange={(sort) => handleFilterChange({ sort })}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Search mode: Tabs */}
         {isSearchMode && (
