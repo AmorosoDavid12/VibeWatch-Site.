@@ -130,7 +130,7 @@ function PosterCard({ item }: { item: TMDBMedia }) {
   return (
     <Link
       href={`/title?id=${item.id}&type=${item.media_type}`}
-      className="flex-shrink-0 w-[130px] sm:w-[150px] lg:w-[160px] scroll-snap-align-start group"
+      className="relative flex-shrink-0 w-[130px] sm:w-[150px] lg:w-[160px] scroll-snap-align-start group"
     >
       <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-elevated border border-border-subtle transition-all duration-normal hover-lift">
         {item.poster_path ? (
@@ -149,9 +149,6 @@ function PosterCard({ item }: { item: TMDBMedia }) {
             </svg>
           </div>
         )}
-        <div className="absolute top-1.5 right-1.5 z-10">
-          <WatchlistButton media={item} size="sm" />
-        </div>
         {rating && (
           <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/70 rounded-[var(--radius-sm)] px-1.5 py-0.5">
             <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -160,6 +157,9 @@ function PosterCard({ item }: { item: TMDBMedia }) {
             <span className="text-[10px] text-white font-medium">{rating}</span>
           </div>
         )}
+      </div>
+      <div className="absolute top-1.5 right-1.5 z-10">
+        <WatchlistButton media={item} size="sm" />
       </div>
       <div className="mt-1.5 px-0.5">
         <h3 className="text-xs sm:text-sm text-primary font-medium truncate">{title}</h3>
@@ -253,7 +253,7 @@ function ScrollRow({
       <div className="scroll-row-mask">
         <div className="embla-viewport overflow-hidden cursor-grab" ref={setRef}>
           <div
-            className="flex gap-3 md:gap-4 pb-2"
+            className="flex gap-3 md:gap-4 py-2"
             onPointerDown={handlePointerDown}
             onClickCapture={handleClickCapture}
           >
@@ -276,7 +276,7 @@ function MediaCard({ item }: { item: TMDBMedia }) {
   const typeLabel = item.media_type === 'movie' ? 'Movie' : 'TV';
 
   return (
-    <Link href={`/title?id=${item.id}&type=${item.media_type}`} className="group">
+    <Link href={`/title?id=${item.id}&type=${item.media_type}`} className="relative group">
       <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-elevated border border-border-subtle transition-all duration-normal hover-lift">
         {item.poster_path ? (
           <Image
@@ -296,9 +296,6 @@ function MediaCard({ item }: { item: TMDBMedia }) {
         <span className="absolute top-1.5 left-1.5 bg-black/70 text-[10px] font-medium text-white px-1.5 py-0.5 rounded-[var(--radius-sm)]">
           {typeLabel}
         </span>
-        <div className="absolute top-2 right-2 z-10">
-          <WatchlistButton media={item} size="md" />
-        </div>
         {rating && (
           <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/70 rounded-[var(--radius-sm)] px-1.5 py-0.5">
             <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -307,6 +304,9 @@ function MediaCard({ item }: { item: TMDBMedia }) {
             <span className="text-[10px] text-white font-medium">{rating}</span>
           </div>
         )}
+      </div>
+      <div className="absolute top-2 right-2 z-10">
+        <WatchlistButton media={item} size="md" />
       </div>
       <div className="mt-1.5 px-0.5">
         <h3 className="text-xs sm:text-sm text-primary font-medium truncate">{title}</h3>
