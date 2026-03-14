@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
 
       setIsSubmitted(true);
       setCooldown(60);
-    } catch (err: unknown) {
+    } catch {
       // For security, don't reveal if the email exists or not
       // Still show success state
       setIsSubmitted(true);

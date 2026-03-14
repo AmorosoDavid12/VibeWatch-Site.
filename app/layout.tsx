@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./utils/auth-provider";
+import { WatchlistProvider } from "./utils/watchlist-provider";
+import { ToastProvider } from "./components/Toast";
 import SmartAppBanner from "./components/SmartAppBanner";
 
 const inter = Inter({
@@ -48,7 +50,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
         <SmartAppBanner />
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <WatchlistProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </WatchlistProvider>
+        </AuthProvider>
       </body>
     </html>
   );

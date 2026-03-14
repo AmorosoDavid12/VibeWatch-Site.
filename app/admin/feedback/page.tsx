@@ -730,6 +730,7 @@ function FeedbackRow({
                         rel="noopener noreferrer"
                         className="block w-24 h-24 rounded-md overflow-hidden bg-gray-800"
                       >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={url}
                           alt={`Attachment ${i + 1}`}

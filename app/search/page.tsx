@@ -16,6 +16,7 @@ import ActiveFiltersBar from './components/ActiveFiltersBar';
 import { MOODS, buildDiscoverParams } from '../config/moods';
 import { COLLECTIONS, type CollectionConfig } from '../config/collections';
 import { FunnelSimple, CaretDown } from '@phosphor-icons/react';
+import WatchlistButton from '../components/WatchlistButton';
 import {
   searchMulti,
   searchMovies,
@@ -23,7 +24,6 @@ import {
   searchPerson,
   getTrending,
   getPopularMovies,
-  getPopularTV,
   getMovieGenres,
   discoverMovies,
   discoverTV,
@@ -149,6 +149,9 @@ function PosterCard({ item }: { item: TMDBMedia }) {
             </svg>
           </div>
         )}
+        <div className="absolute top-1.5 right-1.5 z-10">
+          <WatchlistButton media={item} size="sm" />
+        </div>
         {rating && (
           <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/70 rounded-[var(--radius-sm)] px-1.5 py-0.5">
             <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -293,6 +296,9 @@ function MediaCard({ item }: { item: TMDBMedia }) {
         <span className="absolute top-1.5 left-1.5 bg-black/70 text-[10px] font-medium text-white px-1.5 py-0.5 rounded-[var(--radius-sm)]">
           {typeLabel}
         </span>
+        <div className="absolute top-2 right-2 z-10">
+          <WatchlistButton media={item} size="md" />
+        </div>
         {rating && (
           <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/70 rounded-[var(--radius-sm)] px-1.5 py-0.5">
             <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -503,12 +509,12 @@ function SearchContent() {
     Promise.all([
       getTrending(),
       getPopularMovies(),
-      getPopularTV(),
+      discoverTV({ sort_by: 'popularity.desc', with_original_language: 'en', voteCountGte: 100 }),
       getMovieGenres(),
     ]).then(([trending, movies, tv, genres]) => {
       setTrendingItems(trending.filter(i => i.media_type === 'movie' || i.media_type === 'tv'));
       setPopularMovies(movies.results);
-      setPopularTV(tv.results);
+      setPopularTV(tv.results.slice(0, 20));
       const nameMap: Record<number, string> = {};
       genres.forEach((g: TMDBGenre) => { nameMap[g.id] = g.name; });
       setGenreNames(nameMap);
@@ -746,7 +752,7 @@ function SearchContent() {
     collection?: CollectionConfig | null;
   }) => {
     const newMood = updates.mood !== undefined ? updates.mood : activeMood;
-    let newGenre = updates.genre !== undefined ? updates.genre : activeGenre;
+    const newGenre = updates.genre !== undefined ? updates.genre : activeGenre;
     let newDecade = updates.decade !== undefined ? updates.decade : activeDecade;
     const newRating = updates.rating !== undefined ? updates.rating : activeRating;
     const newSort = updates.sort !== undefined ? updates.sort : activeSort;
@@ -915,7 +921,7 @@ function SearchContent() {
   }, [
     isSearchMode, isBrowseMode,
     currentPage, totalPages, isLoading, isLoadingMore, inputValue, executeSearch,
-    browsePage, browseTotalPages, isBrowseLoading, isBrowseLoadingMore, activeMood, activeGenre, activeDecade, activeRating, activeSort, activeCollection, executeBrowse,
+    browsePage, browseTotalPages, isBrowseLoading, isBrowseLoadingMore, activeMood, activeGenre, activeDecade, activeRating, activeSort, activeCollection, activeMediaType, executeBrowse,
   ]);
 
   const hasSearchResults = mediaResults.length > 0 || personResults.length > 0;

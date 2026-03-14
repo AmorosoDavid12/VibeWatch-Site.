@@ -381,6 +381,61 @@ body {
   margin-bottom: 8px;
 }
 
+/* ===== WATCHLIST BOOKMARK BUTTON ===== */
+.watchlist-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  transition: background 150ms, transform 100ms;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+/* Ensure 44px min touch target */
+.watchlist-btn::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+
+.watchlist-btn-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.watchlist-btn-sm::before {
+  inset: -8px;
+}
+
+.watchlist-btn:active {
+  transform: scale(0.88);
+}
+
+@media (hover: hover) {
+  .watchlist-btn:hover {
+    background: rgba(0, 0, 0, 0.75);
+  }
+}
+
+/* ===== TOAST ANIMATIONS ===== */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(16px); }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
